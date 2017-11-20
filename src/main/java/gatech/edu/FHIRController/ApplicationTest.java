@@ -1,4 +1,4 @@
-package gatech.edu.FHIR_Controller;
+package gatech.edu.FHIRController;
 
 import java.util.Date;
 
