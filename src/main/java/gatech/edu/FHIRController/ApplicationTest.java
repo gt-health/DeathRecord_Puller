@@ -14,7 +14,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
-@ComponentScan("gatech.edu.FHIR_Controller.FHIR.Client")
+@EnableAutoConfiguration
+@ComponentScan("gatech.edu.common.FHIR.client")
+@ComponentScan("gatech.edu.FHIRController.Controller")
+@ComponentScan("gatech.edu.FHIRController.PHCRClient")
 @SpringBootApplication
 public class ApplicationTest extends SpringBootServletInitializer{
 

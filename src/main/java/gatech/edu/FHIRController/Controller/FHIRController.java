@@ -1,9 +1,11 @@
+
 package gatech.edu.FHIRController.Controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,6 +30,7 @@ import ca.uhn.fhir.model.primitive.DateTimeDt;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
+import gatech.edu.FHIRController.PHCRClient.PHCRClientService;
 import gatech.edu.STIECR.JSON.CodeableConcept;
 import gatech.edu.STIECR.JSON.Diagnosis;
 import gatech.edu.STIECR.JSON.ECR;
@@ -45,31 +48,33 @@ import gatech.edu.common.FHIR.client.ClientService;
 public class FHIRController{
 
 	ClientService FHIRClient;
+	PHCRClientService PHCRClient;
 	@Autowired
-	public FHIRController(ClientService FHIRClient) {
+	public FHIRController(ClientService FHIRClient,PHCRClientService PHCRClient) {
+		this.PHCRClient = PHCRClient;
 		this.FHIRClient = FHIRClient;
+		this.FHIRClient.initializeClient();
 	}
 
 	@RequestMapping(value = "/FHIRGET", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<ECR> MapECR2StagingTables(@RequestParam("id") int id) {
-		ECR ecr = new ECR();
-		ecr = shallowInitECR(ecr);
-		ecr.setId(id);
+	public ResponseEntity<ECR> MapECR2StagingTables(@RequestParam(value="id") int id) {
+		ECR ecr = PHCRClient.requestECRById(id);
+		Integer patientId = Integer.parseInt(ecr.getPatient().getid());
+		IdDt patientIdDt = FHIRClient.transfrom2Id(patientId);
 		try {
-			FHIRClient.getPatient(ecr.getPatient().getid());
+			FHIRClient.getPatient(patientIdDt);
 		}
 		catch(FhirClientConnectionException e){
 			ecr.getNotes().add(e.toString());
 			return new ResponseEntity<ECR>(ecr,HttpStatus.FAILED_DEPENDENCY);
 		}
-		getFHIRRecords(ecr);
-		return new ResponseEntity<ECR>(ecr,HttpStatus.OK);
+		getFHIRRecords(ecr,patientIdDt);
+		ECR patchedECR = PHCRClient.patchECR(ecr);
+		return new ResponseEntity<ECR>(patchedECR,HttpStatus.OK);
 	}
 	
-	private void getFHIRRecords(ECR ecr) {
+	private void getFHIRRecords(ECR ecr, IdDt patientIdDt) {
 		Patient ecrPatient = ecr.getPatient();
-		Integer patientId = Integer.parseInt(ecrPatient.getid());
-		IdDt patientIdDt = FHIRClient.transfrom2Id(patientId);
 		ca.uhn.fhir.model.dstu2.resource.Patient patient = FHIRClient.getPatient(patientIdDt);
 		
 		handlePatient(ecr,patient);

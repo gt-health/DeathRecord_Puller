@@ -13,7 +13,7 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 
 @Service
-@Configuration()
+@Configuration
 @ConfigurationProperties(prefix="scheduler")
 public class SchedulerService {
 
@@ -33,5 +33,21 @@ public class SchedulerService {
 		File removeJobShellScript = new File(scriptFolder,"addJob.sh");
 		Process p = Runtime.getRuntime().exec("sh "+removeJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString());
 		return p.waitFor();
-	}	
+	}
+	
+	public String getScriptFolder() {
+		return scriptFolder;
+	}
+
+	public void setScriptFolder(String scriptFolder) {
+		this.scriptFolder = scriptFolder;
+	}
+
+	public String getScriptUser() {
+		return scriptUser;
+	}
+
+	public void setScriptUser(String scriptUser) {
+		this.scriptUser = scriptUser;
+	}
 }
