@@ -1,6 +1,10 @@
 
 package gatech.edu.FHIRController.Controller;
 
+import javax.xml.ws.http.HTTPException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +35,7 @@ import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import gatech.edu.FHIRController.PHCRClient.PHCRClientService;
+import gatech.edu.STIECR.ApplicationTest;
 import gatech.edu.STIECR.JSON.CodeableConcept;
 import gatech.edu.STIECR.JSON.Diagnosis;
 import gatech.edu.STIECR.JSON.ECR;
@@ -47,6 +52,8 @@ import gatech.edu.common.FHIR.client.ClientService;
 @RestController
 public class FHIRController{
 
+	private static final Logger log = LoggerFactory.getLogger(FHIRController.class);
+	
 	ClientService FHIRClient;
 	PHCRClientService PHCRClient;
 	@Autowired
@@ -58,6 +65,7 @@ public class FHIRController{
 
 	@RequestMapping(value = "/FHIRGET", method = RequestMethod.GET, produces = "application/json")
 	public ResponseEntity<ECR> MapECR2StagingTables(@RequestParam(value="id") int id) {
+		log.info("Getting ECR with id="+id);
 		ECR ecr = PHCRClient.requestECRById(id);
 		Integer patientId = Integer.parseInt(ecr.getPatient().getid());
 		IdDt patientIdDt = FHIRClient.transfrom2Id(patientId);
@@ -69,22 +77,32 @@ public class FHIRController{
 			return new ResponseEntity<ECR>(ecr,HttpStatus.FAILED_DEPENDENCY);
 		}
 		getFHIRRecords(ecr,patientIdDt);
-		ECR patchedECR = PHCRClient.patchECR(ecr);
-		return new ResponseEntity<ECR>(patchedECR,HttpStatus.OK);
+		log.info("PUTTING THIS ECR RECORD:" + ecr.toString());
+		HttpStatus returnStatus = HttpStatus.OK;
+		try {
+			PHCRClient.putECR(ecr);
+		}
+		catch(HTTPException e) {
+			ecr.getNotes().add(e.getMessage());
+			returnStatus = HttpStatus.NO_CONTENT;
+			return new ResponseEntity<ECR>(ecr,returnStatus);
+		}
+		return new ResponseEntity<ECR>(ecr,returnStatus);
 	}
 	
 	private void getFHIRRecords(ECR ecr, IdDt patientIdDt) {
 		Patient ecrPatient = ecr.getPatient();
+		log.info("Getting patient with id="+patientIdDt.getIdPart());
 		ca.uhn.fhir.model.dstu2.resource.Patient patient = FHIRClient.getPatient(patientIdDt);
 		
 		handlePatient(ecr,patient);
-		handleRelatedPersons(ecr,patientIdDt);
+		//handleRelatedPersons(ecr,patientIdDt);
 		for(ResourceReferenceDt practitionerRef: patient.getCareProvider()) {
 			handlePractitioner(ecr,practitionerRef);
 		}
 		handleConditions(ecr,patientIdDt);
 		handleEncounters(ecr,patientIdDt);
-		handleImmunizations(ecr,patientIdDt);
+		//handleImmunizations(ecr,patientIdDt);
 		//TODO: Handle ingressing visits correctly
 		//TODO: Handle All Observations correctly
 	}
@@ -150,9 +168,13 @@ public class FHIRController{
 		Bundle conditions = FHIRClient.getConditions(IdDt);
 		for(Entry entry : conditions.getEntry()) {
 			Condition condition = (Condition)entry.getResource();
+			log.info("CONDITION --- Trying condition: " + condition.getId());
 			CodeableConceptDt code = condition.getCode();
+			log.info("CONDITION --- Trying code with this many codings: " + code.getCoding().size());
 			for(CodingDt coding : code.getCoding()) {
+				log.info("CONDITION --- Trying coding: " + coding.getDisplay());
 				CodeableConcept concept = FHIRCoding2ECRConcept(coding);
+				log.info("CONDITION --- Translated to ECRconcept:" + concept.toString());
 				if(concept.getsystem().equals("SNOMED CT") && ControllerUtils.isSTICode(concept) && !ecr.getPatient().getsymptoms().contains(concept)) {
 					IDatatype onsetUntyped = condition.getOnset();
 					String onsetDate = "";
@@ -197,6 +219,10 @@ public class FHIRController{
 		}
 	}
 	
+	private void handleObservation(ECR ecr, IdDt IdDt) {
+		
+	}
+	
 	private void updateParentGuardian(ParentGuardian pg, RelatedPerson rp) {
 		for(ContactPointDt contact: rp.getTelecom()) {
 			if(contact.getSystem().equals("Phone") && pg.getphone().isEmpty()) {
@@ -221,7 +247,9 @@ public class FHIRController{
 	public static CodeableConcept FHIRCoding2ECRConcept(CodingDt fhirCoding) {
 		CodeableConcept ecrConcept = new CodeableConcept();
 		ecrConcept.setcode(fhirCoding.getCode());
-		ecrConcept.setsystem(fhirCoding.getSystem());
+		if(fhirCoding.getSystem().equals("http://snomed.info/sct")) {
+			ecrConcept.setsystem("SNOMED CT");
+		}
 		ecrConcept.setdisplay(fhirCoding.getDisplay());
 		return ecrConcept;
 	}

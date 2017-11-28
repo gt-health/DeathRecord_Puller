@@ -39,12 +39,11 @@ public class PHCRClientService {
 		return response.getBody();
 	}
 	
-	public ECR patchECR(ECR ecr) {
+	public void putECR(ECR ecr) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
 		HttpEntity<ECR> entity = new HttpEntity<>(ecr);
 		RestTemplate restTemplate = new RestTemplate();
-		ECR patchedECR = restTemplate.patchForObject(serverBaseURL+"/ECR", entity, ECR.class);
-		return patchedECR;
+		restTemplate.put(serverBaseURL+"/ECR", entity);
 	}
 }

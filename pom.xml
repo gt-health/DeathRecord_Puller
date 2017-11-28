@@ -6,7 +6,7 @@
   <artifactId>FHIR_Controller</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
-  <name>PHCR_Controller</name>
+  <name>FHIR_Controller</name>
   <url>http://maven.apache.org</url>
 
 	<parent>
