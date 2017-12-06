@@ -35,7 +35,6 @@ import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import gatech.edu.FHIRController.PHCRClient.PHCRClientService;
-import gatech.edu.STIECR.ApplicationTest;
 import gatech.edu.STIECR.JSON.CodeableConcept;
 import gatech.edu.STIECR.JSON.Diagnosis;
 import gatech.edu.STIECR.JSON.ECR;
