@@ -1,6 +1,8 @@
 
 package gatech.edu.FHIRController.Controller;
 
+import java.math.BigDecimal;
+
 import javax.xml.ws.http.HTTPException;
 
 import org.slf4j.Logger;
@@ -21,11 +23,15 @@ import ca.uhn.fhir.model.dstu2.composite.CodingDt;
 import ca.uhn.fhir.model.dstu2.composite.ContactPointDt;
 import ca.uhn.fhir.model.dstu2.composite.PeriodDt;
 import ca.uhn.fhir.model.dstu2.composite.ResourceReferenceDt;
+import ca.uhn.fhir.model.dstu2.composite.SimpleQuantityDt;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
 import ca.uhn.fhir.model.dstu2.resource.Bundle.Entry;
 import ca.uhn.fhir.model.dstu2.resource.Condition;
 import ca.uhn.fhir.model.dstu2.resource.Encounter;
 import ca.uhn.fhir.model.dstu2.resource.Immunization;
+import ca.uhn.fhir.model.dstu2.resource.Medication;
+import ca.uhn.fhir.model.dstu2.resource.MedicationOrder;
+import ca.uhn.fhir.model.dstu2.resource.MedicationOrder.DosageInstruction;
 import ca.uhn.fhir.model.dstu2.resource.Observation;
 import ca.uhn.fhir.model.dstu2.resource.Practitioner;
 import ca.uhn.fhir.model.dstu2.resource.RelatedPerson;
@@ -35,9 +41,9 @@ import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import gatech.edu.FHIRController.PHCRClient.PHCRClientService;
-import gatech.edu.STIECR.ApplicationTest;
 import gatech.edu.STIECR.JSON.CodeableConcept;
 import gatech.edu.STIECR.JSON.Diagnosis;
+import gatech.edu.STIECR.JSON.Dosage;
 import gatech.edu.STIECR.JSON.ECR;
 import gatech.edu.STIECR.JSON.Facility;
 import gatech.edu.STIECR.JSON.ImmunizationHistory;
@@ -64,7 +70,7 @@ public class FHIRController{
 	}
 
 	@RequestMapping(value = "/FHIRGET", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<ECR> MapECR2StagingTables(@RequestParam(value="id") int id) {
+	public ResponseEntity<ECR> FHIRGET(@RequestParam(value="id") int id) {
 		log.info("Getting ECR with id="+id);
 		ECR ecr = PHCRClient.requestECRById(id);
 		Integer patientId = Integer.parseInt(ecr.getPatient().getid());
@@ -102,6 +108,7 @@ public class FHIRController{
 		}
 		handleConditions(ecr,patientIdDt);
 		handleEncounters(ecr,patientIdDt);
+		handleMedications(ecr,patientIdDt);
 		//handleImmunizations(ecr,patientIdDt);
 		//TODO: Handle ingressing visits correctly
 		//TODO: Handle All Observations correctly
@@ -150,6 +157,62 @@ public class FHIRController{
 		}
 	}
 	
+	private void handleMedications(ECR ecr, IdDt IdDt) {
+		Bundle medications = FHIRClient.getMedicationOrders(IdDt);
+		for(Entry entry : medications.getEntry()) {
+			CodeableConcept ecrCode = new CodeableConcept();
+			MedicationOrder medicationOrder = (MedicationOrder)entry.getResource();
+			gatech.edu.STIECR.JSON.Medication ecrMedication = new gatech.edu.STIECR.JSON.Medication();
+			log.info("MEDICATION --- Trying medicationOrder: " + medicationOrder.getId());
+			IDatatype medicationCodeUntyped = medicationOrder.getMedication();
+			log.info("MEDICATION --- medication code element class: " + medicationCodeUntyped.getClass());
+			if(medicationCodeUntyped instanceof CodeableConceptDt) {
+				CodeableConceptDt code = (CodeableConceptDt)medicationCodeUntyped;
+				log.info("MEDICATION --- Trying code with this many codings: " + code.getCoding().size());
+				for(CodingDt coding : code.getCoding()) {
+					log.info("MEDICATION --- Trying coding: " + coding.getDisplay());
+					CodeableConcept concept = FHIRCoding2ECRConcept(coding);
+					log.info("MEDICATION --- Translated to ECRconcept:" + concept.toString());
+					ecrMedication.setCode(concept.getcode());
+					ecrMedication.setSystem(concept.getsystem());
+					ecrMedication.setDisplay(concept.getdisplay());
+					ecrCode.setcode(concept.getcode());
+					ecrCode.setsystem(concept.getsystem());
+					ecrCode.setdisplay(concept.getdisplay());
+				}
+			}
+			for(DosageInstruction dosageInstruction : medicationOrder.getDosageInstruction()) {
+				Dosage ecrDosage = new Dosage();
+				IDatatype doseUntyped = dosageInstruction.getDose();
+				log.info("MEDICATION --- Found Dosage: " + doseUntyped.toString());
+				if(doseUntyped instanceof SimpleQuantityDt) {
+					SimpleQuantityDt doseTyped = (SimpleQuantityDt)doseUntyped;
+					log.info("MEDICATION --- Dosage is of SimpleQuentityDt Type");
+					ecrDosage.setValue(doseTyped.getValue().toString());
+					ecrDosage.setUnit(doseTyped.getUnit());
+					ecrMedication.setDosage(ecrDosage);
+				}
+				String periodUnit = dosageInstruction.getTiming().getRepeat().getPeriodUnits();
+				BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
+				Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
+				String commonFrequency= "" + frequency + " times per " + period + " " + periodUnit;
+				log.info("MEDICATION --- Found Frequency: " + commonFrequency);
+				ecrMedication.setFrequency(commonFrequency);
+			}
+			PeriodDt period = medicationOrder.getDispenseRequest().getValidityPeriod();
+			log.info("MEDICATION --- Found Validity Period: " + period);
+			ecrMedication.setDate(period.getStart().toString());
+			log.info("MEDICATION --- ECRCode: " + ecrCode);
+			if(ControllerUtils.isSTIMed(ecrCode) && !ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
+				log.info("MEDICATION --- Found New Entry: " + ecrCode);
+				ecr.getPatient().getMedicationProvided().add(ecrMedication);
+			}
+			else {
+				log.info("MEDICATION --- Didn't Match! " + ecrCode);
+			}
+		}
+	}
+	
 	private void handleImmunizations(ECR ecr, IdDt IdDt) {
 		Bundle immunizations = FHIRClient.getImmunizations(IdDt);
 		for(Entry entry : immunizations.getEntry()) {
@@ -175,23 +238,9 @@ public class FHIRController{
 				log.info("CONDITION --- Trying coding: " + coding.getDisplay());
 				CodeableConcept concept = FHIRCoding2ECRConcept(coding);
 				log.info("CONDITION --- Translated to ECRconcept:" + concept.toString());
-				if(concept.getsystem().equals("SNOMED CT") && ControllerUtils.isSTICode(concept) && !ecr.getPatient().getsymptoms().contains(concept)) {
-					IDatatype onsetUntyped = condition.getOnset();
-					String onsetDate = "";
-					if(onsetUntyped instanceof DateDt) {
-						onsetDate = DateUtil.dateToStdString(((DateDt)onsetUntyped).getValue());
-					}
-					else if(onsetUntyped instanceof PeriodDt) {
-						onsetDate = DateUtil.dateToStdString(((PeriodDt)onsetUntyped).getStart());
-					}
-					else if(onsetUntyped instanceof StringDt) {
-						onsetDate = ((StringDt)onsetUntyped).getValue();
-					}
-					
-					ecr.getPatient().setDiagnosis(new Diagnosis(concept.getcode(),
-																concept.getsystem(),
-																concept.getdisplay(),
-																onsetDate));
+				if(ControllerUtils.isSTICode(concept) && !ecr.getPatient().getsymptoms().contains(concept)) {
+					log.info("CONDITION --- MATCH!" + concept.toString());
+					ecr.getPatient().getsymptoms().add(concept);
 				}
 				//TODO: Figure out the right strategy for mapping an Onset
 				//TODO: distinguish between symptom list and diagnosis list here
@@ -250,6 +299,10 @@ public class FHIRController{
 		if(fhirCoding.getSystem().equals("http://snomed.info/sct")) {
 			ecrConcept.setsystem("SNOMED CT");
 		}
+		if(fhirCoding.getSystem().equals("http://www.nlm.nih.gov/research/umls/rxnorm"))
+			ecrConcept.setsystem("RxNorm");
+		if(fhirCoding.getSystem().equals("http://snomed.info/sct"))
+			ecrConcept.setsystem("SNOMED CT");
 		ecrConcept.setdisplay(fhirCoding.getDisplay());
 		return ecrConcept;
 	}
