@@ -2,6 +2,13 @@
 package gatech.edu.FHIRController.Controller;
 
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.List;
 
 import javax.xml.ws.http.HTTPException;
 
@@ -16,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClientException;
 
 import ca.uhn.fhir.model.api.IDatatype;
 import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
@@ -27,6 +35,8 @@ import ca.uhn.fhir.model.dstu2.composite.SimpleQuantityDt;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
 import ca.uhn.fhir.model.dstu2.resource.Bundle.Entry;
 import ca.uhn.fhir.model.dstu2.resource.Condition;
+import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResource;
+import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResourceInteraction;
 import ca.uhn.fhir.model.dstu2.resource.Encounter;
 import ca.uhn.fhir.model.dstu2.resource.Immunization;
 import ca.uhn.fhir.model.dstu2.resource.Medication;
@@ -35,11 +45,13 @@ import ca.uhn.fhir.model.dstu2.resource.MedicationOrder.DosageInstruction;
 import ca.uhn.fhir.model.dstu2.resource.Observation;
 import ca.uhn.fhir.model.dstu2.resource.Practitioner;
 import ca.uhn.fhir.model.dstu2.resource.RelatedPerson;
+import ca.uhn.fhir.model.dstu2.valueset.TypeRestfulInteractionEnum;
 import ca.uhn.fhir.model.primitive.DateDt;
 import ca.uhn.fhir.model.primitive.DateTimeDt;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
+import gatech.edu.FHIRController.DomainServices.DomainService;
 import gatech.edu.FHIRController.PHCRClient.PHCRClientService;
 import gatech.edu.STIECR.JSON.CodeableConcept;
 import gatech.edu.STIECR.JSON.Diagnosis;
@@ -61,37 +73,59 @@ public class FHIRController{
 	private static final Logger log = LoggerFactory.getLogger(FHIRController.class);
 	
 	ClientService FHIRClient;
+	DomainService DomainService;
 	PHCRClientService PHCRClient;
 	@Autowired
-	public FHIRController(ClientService FHIRClient,PHCRClientService PHCRClient) {
+	public FHIRController(ClientService FHIRClient,PHCRClientService PHCRClient,DomainService DomainService) {
 		this.PHCRClient = PHCRClient;
 		this.FHIRClient = FHIRClient;
+		this.DomainService = DomainService;
 		this.FHIRClient.initializeClient();
 	}
 
 	@RequestMapping(value = "/FHIRGET", method = RequestMethod.GET, produces = "application/json")
 	public ResponseEntity<ECR> FHIRGET(@RequestParam(value="id") int id) {
+		HttpStatus returnStatus = HttpStatus.OK;
 		log.info("Getting ECR with id="+id);
 		ECR ecr = PHCRClient.requestECRById(id);
-		Integer patientId = Integer.parseInt(ecr.getPatient().getid());
-		IdDt patientIdDt = FHIRClient.transfrom2Id(patientId);
+		List<URL> fhirEndpoints = new ArrayList<URL>();
 		try {
-			FHIRClient.getPatient(patientIdDt);
+			fhirEndpoints.addAll(DomainService.getDomains(ecr.getProvider().getname()));
+		} catch (RestClientException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IllegalArgumentException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (MalformedURLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (URISyntaxException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
-		catch(FhirClientConnectionException e){
-			ecr.getNotes().add(e.toString());
-			return new ResponseEntity<ECR>(ecr,HttpStatus.FAILED_DEPENDENCY);
-		}
-		getFHIRRecords(ecr,patientIdDt);
-		log.info("PUTTING THIS ECR RECORD:" + ecr.toString());
-		HttpStatus returnStatus = HttpStatus.OK;
-		try {
-			PHCRClient.putECR(ecr);
-		}
-		catch(HTTPException e) {
-			ecr.getNotes().add(e.getMessage());
-			returnStatus = HttpStatus.NO_CONTENT;
-			return new ResponseEntity<ECR>(ecr,returnStatus);
+		for(URL endpoint: fhirEndpoints) {
+			FHIRClient.setServerBaseUrl(endpoint.toString());
+			FHIRClient.initializeClient(); //This is an expensive operation
+			Integer patientId = Integer.parseInt(ecr.getPatient().getid());
+			IdDt patientIdDt = FHIRClient.transfrom2Id(patientId);
+			try {
+				FHIRClient.getPatient(patientIdDt);
+			}
+			catch(FhirClientConnectionException e){
+				ecr.getNotes().add(e.toString());
+				return new ResponseEntity<ECR>(ecr,HttpStatus.FAILED_DEPENDENCY);
+			}
+			getFHIRRecords(ecr,patientIdDt);
+			log.info("PUTTING THIS ECR RECORD:" + ecr.toString());
+			try {
+				PHCRClient.putECR(ecr);
+			}
+			catch(HTTPException e) {
+				ecr.getNotes().add(e.getMessage());
+				returnStatus = HttpStatus.NO_CONTENT;
+				return new ResponseEntity<ECR>(ecr,returnStatus);
+			}
 		}
 		return new ResponseEntity<ECR>(ecr,returnStatus);
 	}
@@ -100,7 +134,43 @@ public class FHIRController{
 		Patient ecrPatient = ecr.getPatient();
 		log.info("Getting patient with id="+patientIdDt.getIdPart());
 		ca.uhn.fhir.model.dstu2.resource.Patient patient = FHIRClient.getPatient(patientIdDt);
-		
+		List<RestResource> availableResources = FHIRClient.getConformanceStatementResources();
+		for(RestResource resource : availableResources) {
+			Dictionary<String,RestResourceInteraction> interactionDict = new Hashtable<String,RestResourceInteraction>();
+			for(RestResourceInteraction interaction : resource.getInteraction()) {
+				interactionDict.put(interaction.getCode(), interaction);
+			}
+			
+			if(interactionDict.get(TypeRestfulInteractionEnum.CREATE) != null) {
+				switch(resource.getType()) {
+					case "Condition":
+						handleConditions(ecr,patientIdDt);
+						break;
+					case "Encounter":
+						handleEncounters(ecr,patientIdDt);
+						break;
+					case "Immunization":
+						handleImmunizations(ecr,patientIdDt);
+						break;
+					case "Medication":
+						handleMedications(ecr,patientIdDt);
+						break;
+					case "Observation":
+						handleObservation(ecr,patientIdDt);
+						break;
+					case "Patient":
+						handlePatient(ecr,patient);
+					case "Practictioner":
+						for(ResourceReferenceDt practitionerRef: patient.getCareProvider()) {
+							handlePractitioner(ecr,practitionerRef);
+						}
+						break;
+					case "RelatedPersons":
+						handleRelatedPersons(ecr,patientIdDt);
+						break;
+				}
+			}
+		}
 		handlePatient(ecr,patient);
 		//handleRelatedPersons(ecr,patientIdDt);
 		for(ResourceReferenceDt practitionerRef: patient.getCareProvider()) {
@@ -281,16 +351,6 @@ public class FHIRController{
 				pg.setemail(contact.getValue());
 			}
 		}
-	}
-	
-	private static ECR shallowInitECR(ECR ecr) {
-		if(ecr.getPatient() == null)
-			ecr.setPatient(new Patient());
-		if(ecr.getProvider() == null)
-			ecr.setProvider(new Provider());
-		if(ecr.getFacility() == null)
-			ecr.setFacility(new Facility());
-		return ecr;
 	}
 	
 	public static CodeableConcept FHIRCoding2ECRConcept(CodingDt fhirCoding) {
