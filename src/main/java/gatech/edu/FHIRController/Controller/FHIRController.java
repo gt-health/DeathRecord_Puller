@@ -95,10 +95,12 @@ public class FHIRController{
 	}
 
 	@RequestMapping(value = "/FHIRGET", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<ECR> FHIRGET(@RequestParam(value="id") int id) {
+	public ResponseEntity<ECR> FHIRGET(@RequestParam(value="id") int id, @RequestParam(name = "scheduled", required = false, defaultValue = "false")boolean scheduled) {
 		HttpStatus returnStatus = HttpStatus.OK;
 		log.info("Getting ECR with id="+id);
+		//Get original ECR record
 		ECR ecr = PHCRClient.requestECRById(id);
+		//Find Domainservice endpoints given a provider's name
 		List<URL> fhirEndpoints = new ArrayList<URL>();
 		try {
 			fhirEndpoints.addAll(DomainService.getDomains(ecr.getProvider().getname()));
@@ -115,11 +117,13 @@ public class FHIRController{
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
+		//For each endpoint, pull FHIR resources
 		for(URL endpoint: fhirEndpoints) {
 			FHIRClient.setServerBaseUrl(endpoint.toString());
 			FHIRClient.initializeClient(); //This is an expensive operation
 			Integer patientId = Integer.parseInt(ecr.getPatient().getid());
 			IdDt patientIdDt = FHIRClient.transfrom2Id(patientId);
+			//Test the connectino
 			try {
 				FHIRClient.getPatient(patientIdDt);
 			}
@@ -128,15 +132,19 @@ public class FHIRController{
 				return new ResponseEntity<ECR>(ecr,HttpStatus.FAILED_DEPENDENCY);
 			}
 			getFHIRRecords(ecr,patientIdDt);
-			log.info("PUTTING THIS ECR RECORD:" + ecr.toString());
-			try {
-				PHCRClient.putECR(ecr);
-			}
-			catch(HTTPException e) {
-				ecr.getNotes().add(e.getMessage());
-				returnStatus = HttpStatus.NO_CONTENT;
-				return new ResponseEntity<ECR>(ecr,returnStatus);
-			}
+		}
+		//Replace the old record in the PHCR
+		log.info("PUTTING THIS ECR RECORD:" + ecr.toString());
+		try {
+			PHCRClient.putECR(ecr);
+		}
+		catch(HTTPException e) {
+			ecr.getNotes().add(e.getMessage());
+			returnStatus = HttpStatus.NO_CONTENT;
+			return new ResponseEntity<ECR>(ecr,returnStatus);
+		}
+		if(scheduled) {
+			updateJobEntry(ecr);
 		}
 		return new ResponseEntity<ECR>(ecr,returnStatus);
 	}
@@ -189,6 +197,9 @@ public class FHIRController{
 							handlePractitioner(ecr,practitionerRef);
 						}
 						break;
+					case "Procedure":
+						handleProcedure(ecr,patientIdDt);
+						break;
 					case "RelatedPersons":
 						handleRelatedPersons(ecr,patientIdDt);
 						break;
@@ -206,6 +217,10 @@ public class FHIRController{
 		//handleImmunizations(ecr,patientIdDt);
 		//TODO: Handle ingressing visits correctly
 		//TODO: Handle All Observations correctly
+	}
+	
+	public void updateJobEntry(ECR ecr) {
+		
 	}
 	
 	private void handlePatient(ECR ecr, ca.uhn.fhir.model.dstu2.resource.Patient patient) {
@@ -250,8 +265,6 @@ public class FHIRController{
 			}
 		}
 	}
-	
-	
 	
 	private void handleMedicationAdministrations(ECR ecr,IdDt IdDt) {
 		Bundle medications = FHIRClient.getMedicationAdministrations(IdDt);

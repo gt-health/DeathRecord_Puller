@@ -21,17 +21,17 @@ public class SchedulerService {
 	private static final CronParser parser = new CronParser(cronDefinition);
 	private String scriptFolder;
 	private String scriptUser;
-	public int addScheduleService(String cronString) throws Exception{
+	public int addScheduleService(String cronString, Integer case_id) throws Exception{
 		Cron myCron = parser.parse(cronString);
 		File addJobShellScript = new File(scriptFolder,"addJob.sh");
-		Process p = Runtime.getRuntime().exec("sh "+addJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString());
+		Process p = Runtime.getRuntime().exec("sh "+addJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString()+" "+case_id.toString());
 		return p.waitFor();
 	}
 	
-	public int removeScheduleService(String cronString) throws Exception{
+	public int removeScheduleService(String cronString, Integer case_id) throws Exception{
 		Cron myCron = parser.parse(cronString);
-		File removeJobShellScript = new File(scriptFolder,"addJob.sh");
-		Process p = Runtime.getRuntime().exec("sh "+removeJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString());
+		File removeJobShellScript = new File(scriptFolder,"removeJob.sh");
+		Process p = Runtime.getRuntime().exec("sh "+removeJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString()+" "+case_id.toString());
 		return p.waitFor();
 	}
 	
