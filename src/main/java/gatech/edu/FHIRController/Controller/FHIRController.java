@@ -61,9 +61,13 @@ import ca.uhn.fhir.model.primitive.DateTimeDt;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
+
 import gatech.edu.FHIRController.DomainServices.DomainService;
 import gatech.edu.FHIRController.PHCRClient.PHCRClientService;
+import gatech.edu.FHIRController.Scheduler.SchedulerService;
 import gatech.edu.FHIRController.util.HAPIFHIRUtil;
+import gatech.edu.STIECR.DB.model.ECRJob;
+import gatech.edu.STIECR.DB.repo.ECRJobRepository;
 import gatech.edu.STIECR.JSON.CodeableConcept;
 import gatech.edu.STIECR.JSON.Diagnosis;
 import gatech.edu.STIECR.JSON.Dosage;
@@ -86,11 +90,15 @@ public class FHIRController{
 	ClientService FHIRClient;
 	DomainService DomainService;
 	PHCRClientService PHCRClient;
+	ECRJobRepository ECRJobRepository;
+	SchedulerService SchedulerService;
 	@Autowired
-	public FHIRController(ClientService FHIRClient,PHCRClientService PHCRClient,DomainService DomainService) {
+	public FHIRController(ClientService FHIRClient,PHCRClientService PHCRClient,DomainService DomainService,ECRJobRepository ECRJobRepository,SchedulerService SchedulerService) {
 		this.PHCRClient = PHCRClient;
 		this.FHIRClient = FHIRClient;
 		this.DomainService = DomainService;
+		this.ECRJobRepository = ECRJobRepository;
+		this.SchedulerService = SchedulerService;
 		this.FHIRClient.initializeClient();
 	}
 
@@ -147,6 +155,19 @@ public class FHIRController{
 			updateJobEntry(ecr);
 		}
 		return new ResponseEntity<ECR>(ecr,returnStatus);
+	}
+	
+	@RequestMapping(value = "/FHIRGET", method = RequestMethod.POST, produces = "application/json")
+	public ResponseEntity<ECRJob> schedule(@RequestParam(name="id") int id, @RequestParam(name="cron",required=false,defaultValue="0 0 * * *") String cron){
+		ECR ecr = PHCRClient.requestECRById(id);
+		ECRJob job = new ECRJob(ecr);
+		try {
+			SchedulerService.addScheduleService(cron, job);
+		} catch (Exception e) {
+			return new ResponseEntity<ECRJob>(job,HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		ECRJobRepository.save(job);
+		return new ResponseEntity<ECRJob>(job,HttpStatus.OK);
 	}
 	
 	private void getFHIRRecords(ECR ecr, IdDt patientIdDt) {
@@ -220,7 +241,22 @@ public class FHIRController{
 	}
 	
 	public void updateJobEntry(ECR ecr) {
-		
+		List<ECRJob> searchResults = ECRJobRepository.findByReportIdOrderByIdDesc(ecr.getECRId());
+		if(searchResults.size() == 0) {
+			log.info("JOBUPDATE --- No Job found for Id "+ ecr.getECRId() + "!");
+			return;
+		}
+		ECRJob job = searchResults.get(0);
+		job.instantUpdate();
+		ECRJobRepository.save(job);
+		if(job.getStatusCode().equalsIgnoreCase("C")) {
+			try {
+				SchedulerService.removeScheduleService(job);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	private void handlePatient(ECR ecr, ca.uhn.fhir.model.dstu2.resource.Patient patient) {

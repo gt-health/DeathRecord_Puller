@@ -1,16 +1,22 @@
 package gatech.edu.FHIRController.Scheduler;
 
 import java.io.File;
+import java.time.LocalDateTime;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
+import org.threeten.bp.ZonedDateTime;
 
 import com.cronutils.model.Cron;
 import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinition;
 import com.cronutils.model.definition.CronDefinitionBuilder;
+import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
+import com.google.common.base.Optional;
+
+import gatech.edu.STIECR.DB.model.ECRJob;
 
 @Service
 @Configuration
@@ -21,17 +27,22 @@ public class SchedulerService {
 	private static final CronParser parser = new CronParser(cronDefinition);
 	private String scriptFolder;
 	private String scriptUser;
-	public int addScheduleService(String cronString, Integer case_id) throws Exception{
+	public int addScheduleService(String cronString, ECRJob ecrjob) throws Exception{
 		Cron myCron = parser.parse(cronString);
+		ExecutionTime executionTime = ExecutionTime.forCron(myCron);
+		Optional<ZonedDateTime> nextRun = executionTime.nextExecution(ZonedDateTime.now());
+		if(nextRun.isPresent()) {
+			LocalDateTime ldtNextRun = LocalDateTime.parse(nextRun.get().toString());
+			ecrjob.setNextRunDate(ldtNextRun);
+		}
 		File addJobShellScript = new File(scriptFolder,"addJob.sh");
-		Process p = Runtime.getRuntime().exec("sh "+addJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString()+" "+case_id.toString());
+		Process p = Runtime.getRuntime().exec("sh "+addJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString()+" "+ecrjob.getReportId());
 		return p.waitFor();
 	}
 	
-	public int removeScheduleService(String cronString, Integer case_id) throws Exception{
-		Cron myCron = parser.parse(cronString);
+	public int removeScheduleService(ECRJob ecrjob) throws Exception{
 		File removeJobShellScript = new File(scriptFolder,"removeJob.sh");
-		Process p = Runtime.getRuntime().exec("sh "+removeJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString()+" "+case_id.toString());
+		Process p = Runtime.getRuntime().exec("sh "+removeJobShellScript.getPath()+" "+scriptUser+" "+ecrjob.getReportId());
 		return p.waitFor();
 	}
 	
