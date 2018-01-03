@@ -5,17 +5,17 @@ RUN apt-get update -y && apt-get upgrade -y
 
 RUN apt-get install -y \
       git \
-	  java \
-	  mvn
+      openjdk-8-jdk \
+      maven
 	  
 # Define environment variable
-ENV POSTGRES_USER ecrUser
-ENV POSTGRES_PASSWORD ecrUserPassword
+ENV POSTGRES_USER postgres
+ENV POSTGRES_PASSWORD postgres
 ENV POSTGRES_DB ecrdb
 
-
-RUN git clone https://mriley7@git2.icl.gtri.org/scm/cdcsti/ecr_javalib.git
-
-RUN mvn clean install -f ./ecr_javalib/pom.xml
-
+ADD . /usr/src/fhir_src
+RUN mvn clean install -DskipTests -f /usr/src/fhir_src/ecr_javalib
+RUN mvn clean install -DskipTests -f /usr/src/fhir_src/
 COPY target/FHIR_Controller-0.0.1-SNAPSHOT.war $CATALINA_BASE/webapps/
+EXPOSE 8080
+CMD ["catalina.sh", "run"]
