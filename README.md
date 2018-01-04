@@ -56,6 +56,11 @@ FHIR.client.serverBaseUrl = http://smart-wip.hdap.gatech.edu:8080/gt-fhir-webapp
 # The base URL for the PHCR_Controller
 PHCR.client.serverBaseURL = http://localhost:8888/PHCR_Controller-0.0.1-SNAPSHOT
 
+#The URL to the domainservices machine
+domainservices.url = http://domainservice:80/
+#A username, password combo to login to the domain services
+domainservices.passwords.myDSUser = myDSPassword
+
 #Common logging packages
 logging.level.gatech.edu.FHIRController=DEBUG
 logging.level.gatech.edu.common=DEBUG
