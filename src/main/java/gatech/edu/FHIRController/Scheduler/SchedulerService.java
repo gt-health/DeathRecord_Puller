@@ -2,7 +2,10 @@ package gatech.edu.FHIRController.Scheduler;
 
 import java.io.File;
 import java.time.LocalDateTime;
+import java.util.Date;
 
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
@@ -32,8 +35,10 @@ public class SchedulerService {
 		ExecutionTime executionTime = ExecutionTime.forCron(myCron);
 		Optional<ZonedDateTime> nextRun = executionTime.nextExecution(ZonedDateTime.now());
 		if(nextRun.isPresent()) {
-			LocalDateTime ldtNextRun = LocalDateTime.parse(nextRun.get().toString());
-			ecrjob.setNextRunDate(ldtNextRun);
+			
+			DateTimeFormatter ISOFormatter = ISODateTimeFormat.dateTimeNoMillis();
+			Date dateNextRun = ISOFormatter.parseDateTime(nextRun.get().toString()).toDate();
+			ecrjob.setNextRunDate(dateNextRun);
 		}
 		File addJobShellScript = new File(scriptFolder,"addJob.sh");
 		Process p = Runtime.getRuntime().exec("sh "+addJobShellScript.getPath()+" "+scriptUser+" "+myCron.toString()+" "+ecrjob.getReportId());
