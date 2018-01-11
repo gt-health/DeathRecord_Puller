@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -19,6 +21,7 @@ import gatech.edu.FHIRController.DomainServices.model.LoginResponse;
 
 @Service
 public class DomainService {
+        private static final Logger log = LoggerFactory.getLogger(DomainService.class);
 	@Autowired protected ConnectionConfiguration connectionConfig;
 	
 	public List<URL> getDomains(String username) throws IllegalArgumentException, URISyntaxException, RestClientException, MalformedURLException{
@@ -34,15 +37,16 @@ public class DomainService {
 		Map<String,String> uriLoginVariables = new HashMap<String,String>();
 		uriLoginVariables.put("username", username);
 		uriLoginVariables.put("password", password);
+		log.info("DOMAINSERIVCE --- LOGIN PARAMETERS" + " Username:" + uriLoginVariables.get("username") + ",Password:"+ uriLoginVariables.get("password"));
 		URI loginURI = new URI(connectionConfig.getUrl() + "/login");
-		LoginResponse loginResponse = restTemplate.getForObject(loginURI.toURL().toString(), LoginResponse.class, uriLoginVariables);
+		LoginResponse loginResponse = restTemplate.getForObject(loginURI.toURL().toString() + "?username="+uriLoginVariables.get("username")+"&password="+uriLoginVariables.get("password"), LoginResponse.class);
 		
 		Map<String,String> uriGETURLVariables = new HashMap<String,String>();
 		uriGETURLVariables.put("username", username);
 		uriGETURLVariables.put("token", loginResponse.getToken());
 		URI getURLURI = new URI(connectionConfig.getUrl() + "/URL");
-		
-		GetURLResponse getURLResponse = restTemplate.getForObject(getURLURI.toURL().toString(), GetURLResponse.class, uriGETURLVariables); //Find better names please
+		log.info("DOMAINSERIVCE --- URL GET PARAMETERS" + " username:" + uriGETURLVariables.get("username") + ",token:"+ uriGETURLVariables.get("domain"));
+		GetURLResponse getURLResponse = restTemplate.getForObject(getURLURI.toURL().toString() +"?domain="+uriGETURLVariables.get("username")+"&token="+uriGETURLVariables.get("token"), GetURLResponse.class); //Find better names please
 		for(String stringURL : getURLResponse.getURLs()) {
 			returnList.add(new URI(stringURL).toURL());
 		}
