@@ -124,10 +124,10 @@ public class FHIRController{
 		//Find Domainservice endpoints given a provider's name
 		Map<String,Collection<URL> > domainEndpoints = new HashMap<String, Collection<URL> >();
 		try {
-			for(TypeableID providerID: ecr.getProvider().getid()) {
-				domainEndpoints.put(providerID.gettype(), DomainService.getURLs(ecr.getProvider().getname(), providerID.gettype()));
+			for(Provider provider: ecr.getProvider()) {
+				domainEndpoints.put(provider.getid().gettype(), DomainService.getURLs(provider.getname(), provider.getid().gettype()));
+				domainEndpoints.put("public",DomainService.getURLs(provider.getname())); //Handle the public case
 			}
-			domainEndpoints.put("public",DomainService.getURLs(ecr.getProvider().getname())); //Handle the public case
 		} catch (RestClientException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -320,7 +320,7 @@ public class FHIRController{
 	
 	private void handlePractitioner(ECR ecr, ResourceReferenceDt refDt) {
 		Practitioner provider = FHIRClient.getPractictioner(refDt.getId());
-		Provider ecrProvider = ecr.getProvider();
+		Provider ecrProvider = new Provider();
 		ecrProvider.setaddress(provider.getAddress().get(0).getText());
 		ecrProvider.setcountry(provider.getAddress().get(0).getCountry());
 		for(ContactPointDt contact: provider.getTelecom()) {
@@ -330,6 +330,16 @@ public class FHIRController{
 			else if(contact.getSystem().equals("Email") && ecrProvider.getemail().isEmpty()) {
 				ecrProvider.setemail(contact.getValue());
 			}
+		}
+		//Update or add to the current provider list
+		if(ecr.getProvider().contains(ecrProvider)) {
+			for(Provider originalProvider:ecr.getProvider()) {
+				if(originalProvider.equals(ecrProvider))
+					originalProvider.update(ecrProvider);
+			}
+		}
+		else {
+			ecr.getProvider().add(ecrProvider);
 		}
 	}
 	
