@@ -24,8 +24,41 @@ public class DomainService {
         private static final Logger log = LoggerFactory.getLogger(DomainService.class);
 	@Autowired protected ConnectionConfiguration connectionConfig;
 	
-	public List<URL> getDomains(String username) throws IllegalArgumentException, URISyntaxException, RestClientException, MalformedURLException{
+	public List<URL> getURLs(String username) throws IllegalArgumentException, URISyntaxException, RestClientException, MalformedURLException{
+		LoginResponse loginResponse = login(username);
+		
 		List<URL> returnList = new ArrayList<URL>();
+		RestTemplate restTemplate = new RestTemplate();
+		Map<String,String> uriGETURLVariables = new HashMap<String,String>();
+		uriGETURLVariables.put("username", username);
+		uriGETURLVariables.put("token", loginResponse.getToken());
+		URI getURLURI = new URI(connectionConfig.getUrl() + "/URL");
+		log.info("DOMAINSERIVCE --- URL GET PARAMETERS" + " username:" + uriGETURLVariables.get("username") + ",token:"+ uriGETURLVariables.get("token"));
+		GetURLResponse getURLResponse = restTemplate.getForObject(getURLURI.toURL().toString() +"?domain="+uriGETURLVariables.get("username")+"&token="+uriGETURLVariables.get("token"), GetURLResponse.class); //Find better names please
+		for(String stringURL : getURLResponse.getURLs()) {
+			returnList.add(new URI(stringURL).toURL());
+		}
+		return returnList;
+	}
+	
+	public List<URL> getURLs(String username,String domain) throws RestClientException, MalformedURLException, URISyntaxException{
+		LoginResponse loginResponse = login(username);
+		List<URL> returnList = new ArrayList<URL>();
+		RestTemplate restTemplate = new RestTemplate();
+		Map<String,String> uriGETURLVariables = new HashMap<String,String>();
+		uriGETURLVariables.put("username", username);
+		uriGETURLVariables.put("token", loginResponse.getToken());
+		uriGETURLVariables.put("domain", domain);
+		URI getURLURI = new URI(connectionConfig.getUrl() + "/URL");
+		log.info("DOMAINSERIVCE --- URL GET PARAMETERS" + " username:" + uriGETURLVariables.get("username") + ",token:"+ uriGETURLVariables.get("token") + ",domain:" + uriGETURLVariables.get("domain"));
+		GetURLResponse getURLResponse = restTemplate.getForObject(getURLURI.toURL().toString() +"?domain="+uriGETURLVariables.get("domain")+"&token="+uriGETURLVariables.get("token"), GetURLResponse.class); //Find better names please
+		for(String stringURL : getURLResponse.getURLs()) {
+			returnList.add(new URI(stringURL).toURL());
+		}
+		return returnList;
+	}
+	
+	public LoginResponse login(String username) throws URISyntaxException, RestClientException, MalformedURLException {
 		RestTemplate restTemplate = new RestTemplate();
 		String password = "";
 		try {
@@ -40,16 +73,6 @@ public class DomainService {
 		log.info("DOMAINSERIVCE --- LOGIN PARAMETERS" + " Username:" + uriLoginVariables.get("username") + ",Password:"+ uriLoginVariables.get("password"));
 		URI loginURI = new URI(connectionConfig.getUrl() + "/login");
 		LoginResponse loginResponse = restTemplate.getForObject(loginURI.toURL().toString() + "?username="+uriLoginVariables.get("username")+"&password="+uriLoginVariables.get("password"), LoginResponse.class);
-		
-		Map<String,String> uriGETURLVariables = new HashMap<String,String>();
-		uriGETURLVariables.put("username", username);
-		uriGETURLVariables.put("token", loginResponse.getToken());
-		URI getURLURI = new URI(connectionConfig.getUrl() + "/URL");
-		log.info("DOMAINSERIVCE --- URL GET PARAMETERS" + " username:" + uriGETURLVariables.get("username") + ",token:"+ uriGETURLVariables.get("domain"));
-		GetURLResponse getURLResponse = restTemplate.getForObject(getURLURI.toURL().toString() +"?domain="+uriGETURLVariables.get("username")+"&token="+uriGETURLVariables.get("token"), GetURLResponse.class); //Find better names please
-		for(String stringURL : getURLResponse.getURLs()) {
-			returnList.add(new URI(stringURL).toURL());
-		}
-		return returnList;
+		return loginResponse;
 	}
 }
