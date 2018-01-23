@@ -144,9 +144,9 @@ public class FHIRController{
 		//For each organization searched and added from domain services
 		for(String organization: domainEndpoints.keySet()) {
 			log.info("TRYING ORGANIZATION :" + organization);
-			TypeableID patientId = ecr.getPatient().getIdMatchingType(organization); //Get Patient ID that matches the organization
+			TypeableID patientId = ecr.getPatient().getIdMatchingType("MR"); //Get Patient ID that matches the organization
 			if(patientId != null) {
-				log.info("FOUND MATCHING PATIENTID TO ORGANIZATION:" + patientId);
+				log.info("FOUND MATCHING PATIENTID MR:" + patientId);
 				//For each url pulled by that organization key
 				for(URL endpoint: domainEndpoints.get(organization)) {
 					FHIRClient.setServerBaseUrl(endpoint.toString());
