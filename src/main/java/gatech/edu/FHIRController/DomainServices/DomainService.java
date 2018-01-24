@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.naming.ConfigurationException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,33 +26,31 @@ public class DomainService {
         private static final Logger log = LoggerFactory.getLogger(DomainService.class);
 	@Autowired protected ConnectionConfiguration connectionConfig;
 	
-	public List<URL> getURLs(String username) throws IllegalArgumentException, URISyntaxException, RestClientException, MalformedURLException{
+	public List<URL> getURLs(String username) throws IllegalArgumentException, URISyntaxException, RestClientException, MalformedURLException, ConfigurationException{
 		LoginResponse loginResponse = login(username);
 		
-		List<URL> returnList = new ArrayList<URL>();
-		RestTemplate restTemplate = new RestTemplate();
-		Map<String,String> uriGETURLVariables = new HashMap<String,String>();
-		uriGETURLVariables.put("username", username);
-		uriGETURLVariables.put("token", loginResponse.getToken());
-		URI getURLURI = new URI(connectionConfig.getUrl() + "/URL");
-		log.info("DOMAINSERIVCE --- URL GET PARAMETERS" + " username:" + uriGETURLVariables.get("username") + ",token:"+ uriGETURLVariables.get("token"));
-		GetURLResponse getURLResponse = restTemplate.getForObject(getURLURI.toURL().toString() +"?domain="+uriGETURLVariables.get("username")+"&token="+uriGETURLVariables.get("token"), GetURLResponse.class); //Find better names please
-		for(String stringURL : getURLResponse.getURLs()) {
-			returnList.add(new URI(stringURL).toURL());
-		}
-		return returnList;
+		return handleGETURLs(loginResponse.getToken(),username,"");
 	}
 	
-	public List<URL> getURLs(String username,String domain) throws RestClientException, MalformedURLException, URISyntaxException{
+	public List<URL> getURLs(String username,String domain) throws RestClientException, MalformedURLException, URISyntaxException, ConfigurationException{
 		LoginResponse loginResponse = login(username);
+		
+		return handleGETURLs(loginResponse.getToken(),username,domain);
+	}
+	
+	private List<URL> handleGETURLs(String token, String username,String domain) throws URISyntaxException, RestClientException, MalformedURLException{
 		List<URL> returnList = new ArrayList<URL>();
 		RestTemplate restTemplate = new RestTemplate();
 		Map<String,String> uriGETURLVariables = new HashMap<String,String>();
 		uriGETURLVariables.put("username", username);
-		uriGETURLVariables.put("token", loginResponse.getToken());
+		uriGETURLVariables.put("token", token);
 		uriGETURLVariables.put("domain", domain);
 		URI getURLURI = new URI(connectionConfig.getUrl() + "/URL");
 		log.info("DOMAINSERIVCE --- URL GET PARAMETERS" + " username:" + uriGETURLVariables.get("username") + ",token:"+ uriGETURLVariables.get("token") + ",domain:" + uriGETURLVariables.get("domain"));
+		String requestString  = getURLURI.toURL().toString()+"&token="+uriGETURLVariables.get("token");
+		if(!domain.isEmpty()) {
+			requestString.concat("?domain="+uriGETURLVariables.get("domain"));
+		}
 		GetURLResponse getURLResponse = restTemplate.getForObject(getURLURI.toURL().toString() +"?domain="+uriGETURLVariables.get("domain")+"&token="+uriGETURLVariables.get("token"), GetURLResponse.class); //Find better names please
 		for(String stringURL : getURLResponse.getURLs()) {
 			returnList.add(new URI(stringURL).toURL());
@@ -58,14 +58,22 @@ public class DomainService {
 		return returnList;
 	}
 	
-	public LoginResponse login(String username) throws URISyntaxException, RestClientException, MalformedURLException {
+	public LoginResponse login(String username) throws URISyntaxException, RestClientException, MalformedURLException, ConfigurationException {
 		RestTemplate restTemplate = new RestTemplate();
 		String password = "";
+		if(username.isEmpty()) {
+			try {
+				username = connectionConfig.getDefaultUsername();
+			}
+			catch(NullPointerException e) {
+				throw new ConfigurationException("DOMAINSERVICE --- Tried to access a defaultusername @ domainservice.defaultUsername when there was no configuration set");
+			} 
+		}
 		try {
 			password = connectionConfig.getPasswords().get(username);
 		}
 		catch(NullPointerException e) {
-			throw new IllegalArgumentException("Missing pre-loaded password from properties file for username "+username);
+			throw new IllegalArgumentException("DOMAINSERVICE --- Missing pre-loaded password from properties file for username "+username);
 		}
 		Map<String,String> uriLoginVariables = new HashMap<String,String>();
 		uriLoginVariables.put("username", username);
@@ -74,5 +82,9 @@ public class DomainService {
 		URI loginURI = new URI(connectionConfig.getUrl() + "/login");
 		LoginResponse loginResponse = restTemplate.getForObject(loginURI.toURL().toString() + "?username="+uriLoginVariables.get("username")+"&password="+uriLoginVariables.get("password"), LoginResponse.class);
 		return loginResponse;
+	}
+	
+	public String getDefaultUsername() {
+		return connectionConfig.getDefaultUsername();
 	}
 }

@@ -14,7 +14,8 @@ public class ConnectionConfiguration {
 	@Autowired
 	private Environment env;
 	
-	private String url;
+	private String url = "";
+	private String defaultUsername = "";
 	private final Map<String, String> passwords = new HashMap<>();
 	
 	public Map<String, String> getPasswords() {
@@ -25,5 +26,12 @@ public class ConnectionConfiguration {
 	}
 	public void setUrl(String url) {
 		this.url = url;
+	}
+	
+	public String getDefaultUsername() {
+		return defaultUsername;
+	}
+	public void setDefaultUsername(String defaultUsername) {
+		this.defaultUsername = defaultUsername;
 	}
 }

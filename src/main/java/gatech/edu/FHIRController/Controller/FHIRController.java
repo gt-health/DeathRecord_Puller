@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.naming.ConfigurationException;
 import javax.xml.ws.http.HTTPException;
 
 import org.hl7.fhir.instance.model.api.IBaseBundle;
@@ -125,8 +126,14 @@ public class FHIRController{
 		Map<String,Collection<URL> > domainEndpoints = new HashMap<String, Collection<URL> >();
 		try {
 			for(Provider provider: ecr.getProvider()) {
-				domainEndpoints.put(provider.getid().gettype(), DomainService.getURLs(provider.getname(), provider.getid().gettype()));
-				domainEndpoints.put("public",DomainService.getURLs(provider.getname())); //Handle the public case
+				List<URL> urls;
+				if(DomainService.getDefaultUsername() != null && !DomainService.getDefaultUsername().isEmpty()) {
+					urls = DomainService.getURLs("", "public");
+				}
+				else {
+					urls = DomainService.getURLs(provider.getname(), provider.getid().gettype());
+				}
+				domainEndpoints.put(provider.getid().getvalue(), urls);
 			}
 		} catch (RestClientException e1) {
 			// TODO Auto-generated catch block
@@ -140,6 +147,9 @@ public class FHIRController{
 		} catch (URISyntaxException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+		} catch (ConfigurationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		//For each organization searched and added from domain services
 		for(String organization: domainEndpoints.keySet()) {
