@@ -691,7 +691,7 @@ public class FHIRController{
 					Coverage coverage = FHIRClient.getCoverageById(claim.getCoverage().get(0).getCoverage().getReference()); //Handling only the first coverage
 					CodingDt coding = coverage.getType(); //Use the first code
 					log.info("CLAIMS --- Found coverage type:" + coding.getDisplay());
-					ecr.getPatient().setInsurance_Type(new CodeableConcept(coding.getCode(),coding.getSystem(),coding.getDisplay()));
+					ecr.getPatient().setinsuranceType(new CodeableConcept(coding.getCode(),coding.getSystem(),coding.getDisplay()));
 				}
 			}
 			claims = FHIRClient.getNextPage(claims);
