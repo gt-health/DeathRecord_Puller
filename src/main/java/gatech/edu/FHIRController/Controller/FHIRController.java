@@ -165,7 +165,10 @@ public class FHIRController{
 					Bundle fhirPatientBundle = null;
 					//Test the connection
 					try {
-						fhirPatientBundle = FHIRClient.getPatientUsingIdentifierAndOrganization(identifier, organization);
+						if(organization.equalsIgnoreCase("Regenstrief"))
+							fhirPatientBundle = FHIRClient.getPatientUsingIdentifierAndOrganization(identifier, organization);
+						else
+							fhirPatientBundle = FHIRClient.getPatient(ecr.getPatient().getname());
 					}
 					catch(FhirClientConnectionException e){
 						ecr.getNotes().add(e.toString());
