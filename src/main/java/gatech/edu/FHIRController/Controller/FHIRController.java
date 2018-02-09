@@ -159,6 +159,7 @@ public class FHIRController{
 				log.info("FOUND MATCHING PATIENTID MR:" + patientId);
 				//For each url pulled by that organization key
 				for(URL endpoint: domainEndpoints.get(organization)) {
+					log.info("Trying endpoint:" + endpoint.toString());
 					FHIRClient.setServerBaseUrl(endpoint.toString());
 					FHIRClient.initializeClient(); //This is an expensive operation
 					String identifier = patientId.getvalue();
@@ -654,8 +655,8 @@ public class FHIRController{
 	
 	public void handleSingularCondition(ECR ecr,Condition condition) {
 		log.info("CONDITION --- Trying condition: " + condition.getId());
-		Date abatementDate = HAPIFHIRUtil.getDate(condition.getAbatement());
-		if(abatementDate != null & abatementDate.compareTo(new Date()) <= 0) {
+		Date abatementDate = condition.getAbatement() != null ? HAPIFHIRUtil.getDate(condition.getAbatement()) : null;
+		if(abatementDate != null && abatementDate.compareTo(new Date()) <= 0) {
 			log.info("CONDITION --- Found abatement date of: " + abatementDate);
 			log.info("CONDITION --- Condition is not current, ignoring condition.");
 			return;
@@ -663,7 +664,7 @@ public class FHIRController{
 		Date onsetDate = HAPIFHIRUtil.getDate(condition.getOnset());
 		Date ecrDate = null;
 		try {
-			ecrDate = DateUtil.stringToDate(ecr.getPatient().getdateOfOnset());
+			ecrDate = DateUtil.DateTimeStringToDateTime(ecr.getPatient().getdateOfOnset());
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
