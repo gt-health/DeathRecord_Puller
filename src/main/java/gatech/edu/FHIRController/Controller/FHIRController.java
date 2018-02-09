@@ -646,7 +646,7 @@ public class FHIRController{
 			CodeableConcept concept = FHIRCoding2ECRConcept(coding);
 			log.info("CONDITION --- Translated to ECRconcept:" + concept.toString());
 			if(ControllerUtils.isSTICode(concept) && !ecr.getPatient().getsymptoms().contains(concept)) {
-				log.info("CONDITION --- MATCH!" + concept.toString());
+				log.info("CONDITION --- SYMPTOM MATCH!" + concept.toString());
 				ecr.getPatient().getsymptoms().add(concept);
 			}
 		}
@@ -660,7 +660,7 @@ public class FHIRController{
 			log.info("CONDITION --- Condition is not current, ignoring condition.");
 			return;
 		}
-		Date onsetDate = HAPIFHIRUtil.getDate(condition.getAbatement());
+		Date onsetDate = HAPIFHIRUtil.getDate(condition.getOnset());
 		Date ecrDate = null;
 		try {
 			ecrDate = DateUtil.stringToDate(ecr.getPatient().getdateOfOnset());
@@ -668,12 +668,30 @@ public class FHIRController{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if(ecrDate == null || (onsetDate != null && ecrDate != null && onsetDate.compareTo(ecrDate) < 0)) {
-			log.info("CONDITION --- Found onset date of: " + onsetDate);
-			log.info("CONDITION --- Eariler date than previously found. Replacing patient onset date.");
-			ecr.getPatient().setdateOfOnset(DateUtil.DateTimeToStdString(onsetDate));
-		}
 		CodeableConceptDt code = condition.getCode();
+		log.info("CONDITION --- Trying code with this many codings: " + code.getCoding().size());
+		for(CodingDt coding : code.getCoding()) {
+			log.info("CONDITION --- Trying coding: " + coding.getDisplay());
+			CodeableConcept concept = FHIRCoding2ECRConcept(coding);
+			log.info("CONDITION --- Translated to ECRconcept:" + concept.toString());
+			if(ControllerUtils.isSTIDiagnosisCode(concept) && (ecr.getPatient().getDiagnosis() == null || !ecr.getPatient().getDiagnosis().getCode().equals(concept.getcode()))){
+				log.info("CONDITION ---DIAGNOSIS MATCH!" + concept.toString());
+				Diagnosis updatedDiagnosis = new Diagnosis();
+				updatedDiagnosis.setCode(concept.getcode());
+				updatedDiagnosis.setDisplay(concept.getdisplay());
+				updatedDiagnosis.setSystem(concept.getsystem());
+				if(ecrDate == null || (onsetDate != null && ecrDate != null && onsetDate.compareTo(ecrDate) < 0)) {
+					log.info("CONDITION --- Found onset date of: " + onsetDate);
+					log.info("CONDITION --- Eariler date than previously found. Replacing patient onset date.");
+					ecr.getPatient().setdateOfOnset(DateUtil.DateTimeToStdString(onsetDate));
+					updatedDiagnosis.setDate(DateUtil.DateTimeToStdString(onsetDate));
+				}
+				else{
+					updatedDiagnosis.setDate(ecr.getPatient().getdateOfOnset());
+				}
+				return;
+			}
+		}
 		handleSingularConditionConceptCode(ecr,code);
 		//TODO: distinguish between symptom list and diagnosis list here
 		//TODO: Map Pregnant from encounters
