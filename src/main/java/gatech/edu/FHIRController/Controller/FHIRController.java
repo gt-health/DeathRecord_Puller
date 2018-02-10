@@ -221,7 +221,7 @@ public class FHIRController{
 				for(RestResourceInteraction interaction : resource.getInteraction()) {
 					interactionDict.put(interaction.getCode(), interaction);
 				}
-				if(interactionDict.get(TypeRestfulInteractionEnum.CREATE) != null) {
+				if(interactionDict.get("read") != null) {
 					switch(resource.getType()) {
 						case "Condition":
 							handleConditions(ecr,patient.getId());
@@ -274,7 +274,8 @@ public class FHIRController{
 			}
 			handleConditions(ecr,patient.getId());
 			handleEncounters(ecr,patient.getId());
-			//handleMedications(ecr,patientIdDt);
+			handleMedicationOrders(ecr,patient.getId());
+			handleObservation(ecr,patient.getId());
 			//handleImmunizations(ecr,patientIdDt);
 			//TODO: Handle ingressing visits correctly
 			//TODO: Handle All Observations correctly
@@ -525,7 +526,7 @@ public class FHIRController{
 				else {
 					log.info("MEDICATIONORDER --- Didn't Match or found duplicate! " + ecrCode);
 				}
-				if(!medicationOrder.getReason().isEmpty()) {
+				if(medicationOrder.getReason() != null && !medicationOrder.getReason().isEmpty()) {
 					if(medicationOrder.getReason() instanceof CodeableConceptDt) {
 						handleSingularConditionConceptCode(ecr, (CodeableConceptDt)medicationOrder.getReason());
 					}
@@ -690,6 +691,7 @@ public class FHIRController{
 				else{
 					updatedDiagnosis.setDate(ecr.getPatient().getdateOfOnset());
 				}
+				ecr.getPatient().setDiagnosis(updatedDiagnosis);
 				return;
 			}
 		}
