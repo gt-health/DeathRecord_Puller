@@ -275,7 +275,8 @@ public class FHIRController{
 			}
 			handleConditions(ecr,patient.getId());
 			handleEncounters(ecr,patient.getId());
-			//handleMedications(ecr,patientIdDt);
+			handleMedicationOrders(ecr,patient.getId());
+			handleObservation(ecr,patient.getId());
 			//handleImmunizations(ecr,patientIdDt);
 			//TODO: Handle ingressing visits correctly
 			//TODO: Handle All Observations correctly
@@ -541,7 +542,7 @@ public class FHIRController{
 				else {
 					log.info("MEDICATIONORDER --- Didn't Match or found duplicate! " + ecrCode);
 				}
-				if(!medicationOrder.getReason().isEmpty()) {
+				if(medicationOrder.getReason() != null && !medicationOrder.getReason().isEmpty()) {
 					if(medicationOrder.getReason() instanceof CodeableConceptDt) {
 						handleSingularConditionConceptCode(ecr, (CodeableConceptDt)medicationOrder.getReason());
 					}
