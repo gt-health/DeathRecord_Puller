@@ -59,6 +59,7 @@ import ca.uhn.fhir.model.dstu2.resource.Medication;
 import ca.uhn.fhir.model.dstu2.resource.MedicationAdministration;
 import ca.uhn.fhir.model.dstu2.resource.MedicationDispense;
 import ca.uhn.fhir.model.dstu2.resource.MedicationOrder;
+import ca.uhn.fhir.model.dstu2.resource.MedicationOrder.DispenseRequest;
 import ca.uhn.fhir.model.dstu2.resource.MedicationOrder.DosageInstruction;
 import ca.uhn.fhir.model.dstu2.resource.MedicationStatement;
 import ca.uhn.fhir.model.dstu2.resource.Observation;
@@ -221,7 +222,7 @@ public class FHIRController{
 				for(RestResourceInteraction interaction : resource.getInteraction()) {
 					interactionDict.put(interaction.getCode(), interaction);
 				}
-				if(interactionDict.get(TypeRestfulInteractionEnum.CREATE) != null) {
+				if(interactionDict.get("read") != null) {
 					switch(resource.getType()) {
 						case "Condition":
 							handleConditions(ecr,patient.getId());
@@ -514,6 +515,21 @@ public class FHIRController{
 					log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
 					ecrMedication.setFrequency(commonFrequency);
 				}
+				
+				if(medicationOrder.getDispenseRequest() != null) {
+					Dosage ecrDosage = new Dosage();
+					QuantityDt quantity = medicationOrder.getDispenseRequest().getQuantity();
+					log.info("MEDICATIONORDER --- Found Dispense Order of size " + quantity.getValue() + " and units " + quantity.getUnit());
+					ecrDosage.setValue(quantity.getValue().toString());
+					ecrDosage.setUnit(quantity.getUnit());
+					ecrMedication.setDosage(ecrDosage);
+					if(medicationOrder.getDispenseRequest().getValidityPeriod() != null) {
+						ecrMedication.setDate(medicationOrder.getDispenseRequest().getValidityPeriod().getStart().toString());
+					}
+					ecrMedication.setFrequency("");
+				}
+				
+				
 				PeriodDt period = medicationOrder.getDispenseRequest().getValidityPeriod();
 				log.info("MEDICATIONORDER --- Found Validity Period: " + period);
 				ecrMedication.setDate(period.getStart().toString());
@@ -690,6 +706,7 @@ public class FHIRController{
 				else{
 					updatedDiagnosis.setDate(ecr.getPatient().getdateOfOnset());
 				}
+				ecr.getPatient().setDiagnosis(updatedDiagnosis);
 				return;
 			}
 		}
