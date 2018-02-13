@@ -318,17 +318,9 @@ public class FHIRController{
 							handleRelatedPersons(ecr,patient.getId());
 							break;
 					}
-		//			handlePatient(ecr,curPatient);
-		//			//handleRelatedPersons(ecr,patientIdDt);
 					for(ResourceReferenceDt practitionerRef: curPatient.getCareProvider()) {
 						handlePractitioner(ecr,practitionerRef);
 					}
-		//			handleConditions(ecr,patient.getId());
-		//			handleEncounters(ecr,patient.getId());
-					//handleMedications(ecr,patientIdDt);
-//					handleMedicationOrders(ecr,patient.getId());
-//					handleObservation(ecr,patient.getId());
-					//handleImmunizations(ecr,patientIdDt);
 					//TODO: Handle ingressing visits correctly
 					//TODO: Handle All Observations correctly
 				}
@@ -870,7 +862,6 @@ public class FHIRController{
 				return;
 			}
 		}
-		
 		handleSingularConditionConceptCode(ecr,code);
 		//TODO: distinguish between symptom list and diagnosis list here
 		//TODO: Map Pregnant from encounters
