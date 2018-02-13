@@ -512,9 +512,9 @@ public class FHIRController{
 					String periodUnit = dosageInstruction.getTiming().getRepeat().getPeriodUnits();
 					BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
 					Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
-					String commonFrequency= "" + frequency + " times per " + period + " " + periodUnit;
+					/*String commonFrequency= "" + frequency + " times per " + period + " " + periodUnit;
 					log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
-					ecrMedication.setFrequency(commonFrequency);
+					ecrMedication.setFrequency(commonFrequency); */
 				}
 				
 				PeriodDt period = medicationOrder.getDispenseRequest().getValidityPeriod();
