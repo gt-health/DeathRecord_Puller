@@ -517,20 +517,6 @@ public class FHIRController{
 					ecrMedication.setFrequency(commonFrequency);
 				}
 				
-				if(medicationOrder.getDispenseRequest() != null) {
-					Dosage ecrDosage = new Dosage();
-					QuantityDt quantity = medicationOrder.getDispenseRequest().getQuantity();
-					log.info("MEDICATIONORDER --- Found Dispense Order of size " + quantity.getValue() + " and units " + quantity.getUnit());
-					ecrDosage.setValue(quantity.getValue().toString());
-					ecrDosage.setUnit(quantity.getUnit());
-					ecrMedication.setDosage(ecrDosage);
-					if(medicationOrder.getDispenseRequest().getValidityPeriod() != null) {
-						ecrMedication.setDate(medicationOrder.getDispenseRequest().getValidityPeriod().getStart().toString());
-					}
-					ecrMedication.setFrequency("");
-				}
-				
-				
 				PeriodDt period = medicationOrder.getDispenseRequest().getValidityPeriod();
 				log.info("MEDICATIONORDER --- Found Validity Period: " + period);
 				ecrMedication.setDate(period.getStart().toString());
