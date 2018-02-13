@@ -626,28 +626,12 @@ public class FHIRController{
 							String periodUnit = dosageInstruction.getTiming().getRepeat().getPeriodUnits();
 							BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
 							Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
-							String commonFrequency= "" + frequency + " times per " + period + " " + periodUnit;
-							log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
-							ecrMedication.setFrequency(commonFrequency);
+//							String commonFrequency= "" + frequency + " times per " + period + " " + periodUnit;
+//							log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
+//							ecrMedication.setFrequency(commonFrequency);
 						} else {
 							log.info("MEDICATIONORDER --- DOSE NOT FOUND.");
 						}
-					}
-					
-					PeriodDt period = medicationOrder.getDispenseRequest().getValidityPeriod();
-					log.info("MEDICATIONORDER --- Found Validity Period: " + period);
-					ecrMedication.setDate(period.getStart().toString());
-					if(medicationOrder.getDispenseRequest() != null) {
-						Dosage ecrDosage = new Dosage();
-						QuantityDt quantity = medicationOrder.getDispenseRequest().getQuantity();
-						log.info("MEDICATIONORDER --- Found Dispense Order of size " + quantity.getValue() + " and units " + quantity.getUnit());
-						ecrDosage.setValue(quantity.getValue().toString());
-						ecrDosage.setUnit(quantity.getUnit());
-						ecrMedication.setDosage(ecrDosage);
-						if(medicationOrder.getDispenseRequest().getValidityPeriod() != null) {
-							ecrMedication.setDate(medicationOrder.getDispenseRequest().getValidityPeriod().getStart().toString());
-						}
-						ecrMedication.setFrequency("");
 					}
 					
 					log.info("MEDICATIONORDER --- ECRCode: " + ecrCode);
@@ -657,6 +641,29 @@ public class FHIRController{
 					}
 					else {
 						log.info("MEDICATIONORDER --- Didn't Match or found duplicate! " + ecrCode);
+					}
+//					String periodUnit = dosageInstruction.getTiming().getRepeat().getPeriodUnits();
+//					BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
+//					Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
+//					/*String commonFrequency= "" + frequency + " times per " + period + " " + periodUnit;
+//					log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
+//					ecrMedication.setFrequency(commonFrequency); */
+				}
+				
+				PeriodDt period = medicationOrder.getDispenseRequest().getValidityPeriod();
+				log.info("MEDICATIONORDER --- Found Validity Period: " + period);
+				ecrMedication.setDate(period.getStart().toString());
+				log.info("MEDICATIONORDER --- ECRCode: " + ecrCode);
+				if(ControllerUtils.isSTIMed(ecrCode) && !ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
+					log.info("MEDICATIONORDER --- Found New Entry: " + ecrCode);
+					ecr.getPatient().getMedicationProvided().add(ecrMedication);
+				}
+				else {
+					log.info("MEDICATIONORDER --- Didn't Match or found duplicate! " + ecrCode);
+				}
+				if(medicationOrder.getReason() != null && !medicationOrder.getReason().isEmpty()) {
+					if(medicationOrder.getReason() instanceof CodeableConceptDt) {
+						handleSingularConditionConceptCode(ecr, (CodeableConceptDt)medicationOrder.getReason());
 					}
 					if(medicationOrder.getReason() != null && !medicationOrder.getReason().isEmpty()) {
 						if(medicationOrder.getReason() instanceof CodeableConceptDt) {
