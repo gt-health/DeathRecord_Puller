@@ -1,4 +1,4 @@
-package gatech.edu.PHCR_Controller;
+package gatech.edu.FHIRController;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
