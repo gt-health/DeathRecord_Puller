@@ -87,4 +87,8 @@ public class DomainService {
 	public String getDefaultUsername() {
 		return connectionConfig.getDefaultUsername();
 	}
+	
+	public void setConnectionConfig(ConnectionConfiguration connectionConfig) {
+		this.connectionConfig = connectionConfig;
+	}
 }
