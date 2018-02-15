@@ -680,7 +680,8 @@ public class FHIRController {
 					if (medicationOrder.getReason() != null && !medicationOrder.getReason().isEmpty()) {
 						if (medicationOrder.getReason() instanceof CodeableConceptDt) {
 							handleSingularConditionConceptCode(ecr, (CodeableConceptDt) medicationOrder.getReason());
-						} else if (medicationOrder.getReason() instanceof ResourceReferenceDt) {
+						} else
+						if (medicationOrder.getReason() instanceof ResourceReferenceDt) {
 							handleSingularCondition(ecr, (ResourceReferenceDt) medicationOrder.getReason());
 						}
 					}
@@ -724,7 +725,8 @@ public class FHIRController {
 						SimpleQuantityDt dosageQuantity = (SimpleQuantityDt) dosageQuantityUntyped;
 						ecrDosage.setValue(dosageQuantity.getValue().toString());
 						ecrDosage.setUnit(dosageQuantity.getUnit().toString());
-					} else if (dosageQuantityUntyped instanceof RangeDt) {
+					} else
+					if (dosageQuantityUntyped instanceof RangeDt) {
 						RangeDt dosageRange = (RangeDt) dosageQuantityUntyped;
 						BigDecimal high = dosageRange.getHigh().getValue();
 						BigDecimal low = dosageRange.getLow().getValue();
@@ -754,7 +756,8 @@ public class FHIRController {
 					if (medicationStatement.getReasonForUse() instanceof CodeableConceptDt) {
 						handleSingularConditionConceptCode(ecr,
 								(CodeableConceptDt) medicationStatement.getReasonForUse());
-					} else if (medicationStatement.getReasonForUse() instanceof ResourceReferenceDt) {
+					} else
+					if (medicationStatement.getReasonForUse() instanceof ResourceReferenceDt) {
 						handleSingularCondition(ecr, (ResourceReferenceDt) medicationStatement.getReasonForUse());
 					}
 				}
@@ -772,9 +775,11 @@ public class FHIRController {
 				if (immunization != null && immunization.getVaccineCode().getCoding().size() > 0) {
 					ecrImmunization.setCode(immunization.getVaccineCode().getCoding().get(0).getCode());
 					ecrImmunization.setSystem(immunization.getVaccineCode().getCoding().get(0).getSystem());
-				} else if (immunization != null && StringUtils.isNotBlank(immunization.getVaccineCode().getText())) {
+				} else
+				if (immunization != null && StringUtils.isNotBlank(immunization.getVaccineCode().getText())) {
 					ecrImmunization.setCode(immunization.getVaccineCode().getText());
-				} else if (immunization != null && StringUtils.isNotBlank(immunization.getText().getDivAsString())) {
+				} else
+				if (immunization != null && StringUtils.isNotBlank(immunization.getText().getDivAsString())) {
 					ecrImmunization.setCode(immunization.getText().getDivAsString());
 				}
 				ecrImmunization.setDate(DateUtil.dateToStdString(immunization.getDate()));
@@ -941,24 +946,32 @@ public class FHIRController {
 						IDatatype untypedValue = observation.getValue();
 						if (untypedValue instanceof QuantityDt) {
 							labResult.setValue(((QuantityDt) untypedValue).getValue().toString());
-						} else if (untypedValue instanceof CodeableConcept) {
+						} else
+						if (untypedValue instanceof CodeableConcept) {
 							labResult.setValue(((CodeableConcept) untypedValue).getdisplay());
-						} else if (untypedValue instanceof StringDt) {
+						} else
+						if (untypedValue instanceof StringDt) {
 							labResult.setValue(((StringDt) untypedValue).toString());
-						} else if (untypedValue instanceof RangeDt) {
+						} else
+						if (untypedValue instanceof RangeDt) {
 							RangeDt range = (RangeDt) untypedValue;
 							labResult.setValue("High:" + range.getHigh() + ";low:" + range.getLow());
-						} else if (untypedValue instanceof RatioDt) {
+						} else
+						if (untypedValue instanceof RatioDt) {
 							RatioDt ratio = (RatioDt) untypedValue;
 							labResult.setValue(
 									ratio.getNumerator().toString() + "/" + ratio.getDenominator().toString());
-						} else if (untypedValue instanceof SampledDataDt) {
+						} else
+						if (untypedValue instanceof SampledDataDt) {
 							labResult.setValue(((SampledDataDt) untypedValue).getData());
-						} else if (untypedValue instanceof TimeDt) {
+						} else
+						if (untypedValue instanceof TimeDt) {
 							labResult.setValue(((TimeDt) untypedValue).getValue());
-						} else if (untypedValue instanceof DateTimeDt) {
+						} else
+						if (untypedValue instanceof DateTimeDt) {
 							labResult.setValue(((DateTimeDt) untypedValue).getValueAsString());
-						} else if (untypedValue instanceof PeriodDt) {
+						} else
+						if (untypedValue instanceof PeriodDt) {
 							PeriodDt period = (PeriodDt) untypedValue;
 							labResult.setValue(
 									"Start:" + period.getStart().toString() + ";End" + period.getEnd().toString());
@@ -979,7 +992,8 @@ public class FHIRController {
 				if (procedure.getReason() != null && !procedure.getReason().isEmpty()) {
 					if (procedure.getReason() instanceof CodeableConceptDt) {
 						handleSingularConditionConceptCode(ecr, (CodeableConceptDt) procedure.getReason());
-					} else if (procedure.getReason() instanceof ResourceReferenceDt) {
+					} else
+					if (procedure.getReason() instanceof ResourceReferenceDt) {
 						handleSingularCondition(ecr, (ResourceReferenceDt) procedure.getReason());
 					}
 				}
@@ -993,7 +1007,8 @@ public class FHIRController {
 		for (ContactPointDt contact : rp.getTelecom()) {
 			if (contact.getSystem().equals("Phone") && pg.getphone().isEmpty()) {
 				pg.setphone(contact.getValue());
-			} else if (contact.getSystem().equals("Email") && pg.getemail().isEmpty()) {
+			} else
+			if (contact.getSystem().equals("Email") && pg.getemail().isEmpty()) {
 				pg.setemail(contact.getValue());
 			}
 		}
@@ -1005,7 +1020,8 @@ public class FHIRController {
 		ecrConcept.setsystem(fhirCoding.getSystem());
 		if (fhirCoding.getSystem().equals("http://snomed.info/sct")) {
 			ecrConcept.setsystem("SNOMED CT");
-		} else if (fhirCoding.getSystem().equals("http://www.nlm.nih.gov/research/umls/rxnorm")) {
+		} else
+		if (fhirCoding.getSystem().equals("http://www.nlm.nih.gov/research/umls/rxnorm")) {
 			ecrConcept.setsystem("RxNorm");
 		}
 		ecrConcept.setdisplay(fhirCoding.getDisplay());
