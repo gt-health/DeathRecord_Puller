@@ -85,7 +85,7 @@ public class DeathRecordController {
 	}
 
 	@RequestMapping(value = "/DeathRecord", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<ECR> FHIRGET(@RequestParam(value = "id") int id) {
+	public ResponseEntity<ECR> DeathRecord(@RequestParam(value = "id") int id) {
 		HttpStatus returnStatus = HttpStatus.OK;
 		ECR ecr = new ECR();
 		Bundle returnBundle = new Bundle();
