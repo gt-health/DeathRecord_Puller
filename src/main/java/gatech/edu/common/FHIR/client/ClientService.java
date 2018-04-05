@@ -9,19 +9,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Service;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
-import ca.uhn.fhir.model.dstu2.resource.Claim;
 import ca.uhn.fhir.model.dstu2.resource.Bundle.Entry;
-import ca.uhn.fhir.model.dstu2.resource.Coverage;
+import ca.uhn.fhir.model.dstu2.resource.Claim;
 import ca.uhn.fhir.model.dstu2.resource.Condition;
 import ca.uhn.fhir.model.dstu2.resource.Conformance;
 import ca.uhn.fhir.model.dstu2.resource.Conformance.Rest;
 import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResource;
+import ca.uhn.fhir.model.dstu2.resource.Coverage;
 import ca.uhn.fhir.model.dstu2.resource.Encounter;
 import ca.uhn.fhir.model.dstu2.resource.Immunization;
 import ca.uhn.fhir.model.dstu2.resource.MedicationAdministration;
@@ -35,8 +34,6 @@ import ca.uhn.fhir.model.dstu2.resource.Procedure;
 import ca.uhn.fhir.model.dstu2.resource.RelatedPerson;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
-import ca.uhn.fhir.rest.gclient.IFetchConformanceTyped;
-import ca.uhn.fhir.rest.gclient.IFetchConformanceUntyped;
 import gatech.edu.STIECR.JSON.Name;
 
 @Service

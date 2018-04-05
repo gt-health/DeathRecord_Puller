@@ -2,43 +2,21 @@
 package gatech.edu.DeathRecordPuller.Controller;
 
 import java.math.BigDecimal;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
-import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.naming.ConfigurationException;
-import javax.xml.ws.http.HTTPException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.json.JsonSimpleJsonParser;
-import org.springframework.format.datetime.joda.DateTimeParser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestClientException;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.uhn.fhir.model.api.IDatatype;
 import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
@@ -64,7 +42,6 @@ import ca.uhn.fhir.model.dstu2.resource.Medication;
 import ca.uhn.fhir.model.dstu2.resource.MedicationAdministration;
 import ca.uhn.fhir.model.dstu2.resource.MedicationDispense;
 import ca.uhn.fhir.model.dstu2.resource.MedicationOrder;
-import ca.uhn.fhir.model.dstu2.resource.MedicationOrder.DispenseRequest;
 import ca.uhn.fhir.model.dstu2.resource.MedicationOrder.DosageInstruction;
 import ca.uhn.fhir.model.dstu2.resource.MedicationStatement;
 import ca.uhn.fhir.model.dstu2.resource.Observation;
@@ -79,9 +56,7 @@ import ca.uhn.fhir.model.primitive.DateTimeDt;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.model.primitive.TimeDt;
-import ca.uhn.fhir.parser.JsonParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
-import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
 import gatech.edu.DeathRecordPuller.util.HAPIFHIRUtil;
 import gatech.edu.STIECR.JSON.CodeableConcept;
 import gatech.edu.STIECR.JSON.Diagnosis;
@@ -102,11 +77,9 @@ public class DeathRecordController {
 	private static final Logger log = LoggerFactory.getLogger(DeathRecordController.class);
 
 	ClientService FHIRClient;
-	JsonSimpleJsonParser jsonParser;
 	
 	@Autowired
 	public DeathRecordController(ClientService FHIRClient) {
-		this.jsonParser = new JsonSimpleJsonParser();
 		this.FHIRClient = FHIRClient;
 		this.FHIRClient.initializeClient();
 	}
