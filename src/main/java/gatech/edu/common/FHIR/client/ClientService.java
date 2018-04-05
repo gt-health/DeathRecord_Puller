@@ -47,7 +47,7 @@ public class ClientService {
 	private static final Logger log = LoggerFactory.getLogger(ClientService.class);
 	
 	protected String serverBaseUrl;
-	protected static final FhirContext ctx = FhirContext.forDstu3();
+	protected static final FhirContext ctx = FhirContext.forDstu2();
 	protected IGenericClient client;
 	//TODO: Figure out how to search for source_ids, not new ids.
 	@Autowired 

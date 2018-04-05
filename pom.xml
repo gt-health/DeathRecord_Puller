@@ -67,6 +67,11 @@
     	<artifactId>hapi-fhir-structures-dstu2</artifactId>
     	<version>${fhir.version}</version>
     </dependency>
+    <dependency>
+    	<groupId>ca.uhn.hapi.fhir</groupId>
+    	<artifactId>hapi-fhir-structures-dstu3</artifactId>
+    	<version>${fhir.version}</version>
+    </dependency>
     
   </dependencies>
   
