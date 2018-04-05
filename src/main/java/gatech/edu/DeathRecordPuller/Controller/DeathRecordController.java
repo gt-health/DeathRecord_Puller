@@ -1,5 +1,5 @@
 
-package gatech.edu.FHIRController.Controller;
+package gatech.edu.DeathRecordPuller.Controller;
 
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
@@ -25,6 +25,7 @@ import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.json.JsonSimpleJsonParser;
 import org.springframework.format.datetime.joda.DateTimeParser;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientException;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import ca.uhn.fhir.model.api.IDatatype;
 import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
@@ -64,6 +68,7 @@ import ca.uhn.fhir.model.dstu2.resource.MedicationOrder.DispenseRequest;
 import ca.uhn.fhir.model.dstu2.resource.MedicationOrder.DosageInstruction;
 import ca.uhn.fhir.model.dstu2.resource.MedicationStatement;
 import ca.uhn.fhir.model.dstu2.resource.Observation;
+import ca.uhn.fhir.model.dstu2.resource.Patient;
 import ca.uhn.fhir.model.dstu2.resource.Patient.Link;
 import ca.uhn.fhir.model.dstu2.resource.Practitioner;
 import ca.uhn.fhir.model.dstu2.resource.Procedure;
@@ -74,164 +79,49 @@ import ca.uhn.fhir.model.primitive.DateTimeDt;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.model.primitive.TimeDt;
+import ca.uhn.fhir.parser.JsonParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.exceptions.FhirClientConnectionException;
-
-import gatech.edu.FHIRController.DomainServices.DomainService;
-import gatech.edu.FHIRController.PHCRClient.PHCRClientService;
-import gatech.edu.FHIRController.Scheduler.SchedulerService;
-import gatech.edu.FHIRController.util.HAPIFHIRUtil;
-import gatech.edu.STIECR.DB.model.ECRJob;
-import gatech.edu.STIECR.DB.repo.ECRJobRepository;
+import gatech.edu.DeathRecordPuller.util.HAPIFHIRUtil;
 import gatech.edu.STIECR.JSON.CodeableConcept;
 import gatech.edu.STIECR.JSON.Diagnosis;
 import gatech.edu.STIECR.JSON.Dosage;
 import gatech.edu.STIECR.JSON.ECR;
-import gatech.edu.STIECR.JSON.Facility;
 import gatech.edu.STIECR.JSON.ImmunizationHistory;
 import gatech.edu.STIECR.JSON.LabOrderCode;
 import gatech.edu.STIECR.JSON.LabResult;
 import gatech.edu.STIECR.JSON.Name;
 import gatech.edu.STIECR.JSON.ParentGuardian;
-import gatech.edu.STIECR.JSON.Patient;
 import gatech.edu.STIECR.JSON.Provider;
-import gatech.edu.STIECR.JSON.TypeableID;
 import gatech.edu.STIECR.JSON.utils.DateUtil;
-import gatech.edu.STIECR.JSON.utils.ECRJsonConverter;
-import gatech.edu.STIECR.controller.ControllerUtils;
 import gatech.edu.common.FHIR.client.ClientService;
 
 @RestController
-public class FHIRController {
+public class DeathRecordController {
 
-	private static final Logger log = LoggerFactory.getLogger(FHIRController.class);
+	private static final Logger log = LoggerFactory.getLogger(DeathRecordController.class);
 
 	ClientService FHIRClient;
-	DomainService DomainService;
-	PHCRClientService PHCRClient;
-	ECRJobRepository ECRJobRepository;
-	SchedulerService SchedulerService;
-	ECRJsonConverter ecrConverter;
-
+	JsonSimpleJsonParser jsonParser;
+	
 	@Autowired
-	public FHIRController(ClientService FHIRClient, PHCRClientService PHCRClient, DomainService DomainService,
-			ECRJobRepository ECRJobRepository, SchedulerService SchedulerService) {
-		this.PHCRClient = PHCRClient;
+	public DeathRecordController(ClientService FHIRClient) {
+		this.jsonParser = new JsonSimpleJsonParser();
 		this.FHIRClient = FHIRClient;
-		this.DomainService = DomainService;
-		this.ECRJobRepository = ECRJobRepository;
-		this.SchedulerService = SchedulerService;
 		this.FHIRClient.initializeClient();
-		this.ecrConverter = new ECRJsonConverter();
 	}
 
-	FHIRController(ClientService FHIRClient) {
-		this.FHIRClient = FHIRClient;
-	}
-
-	@RequestMapping(value = "/FHIRGET", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<ECR> FHIRGET(@RequestParam(value = "id") int id,
-			@RequestParam(name = "scheduled", required = false, defaultValue = "false") boolean scheduled) {
+	@RequestMapping(value = "/DeathRecord", method = RequestMethod.GET, produces = "application/json")
+	public ResponseEntity<ECR> FHIRGET(@RequestParam(value = "id") int id) {
 		HttpStatus returnStatus = HttpStatus.OK;
-		log.info("Getting ECR with id=" + id);
-		// Get original ECR record
-		ECR ecr = PHCRClient.requestECRById(id);
-		// Find Domainservice endpoints given a provider's name
-		Map<String, Collection<URL>> domainEndpoints = new HashMap<String, Collection<URL>>();
-		try {
-			List<URL> urls;
-			if (DomainService.getDefaultUsername() != null && !DomainService.getDefaultUsername().isEmpty()) {
-				urls = DomainService.getURLs("", "public");
-				Provider provider = ecr.getProvider().get(0);
-				domainEndpoints.put(provider.getid().getvalue(), urls);
-			} else {
-				for (Provider provider : ecr.getProvider()) {
-					urls = DomainService.getURLs(provider.getname(), provider.getid().gettype());
-					domainEndpoints.put(provider.getid().getvalue(), urls);
-				}
-			}
-		} catch (RestClientException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IllegalArgumentException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (MalformedURLException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (URISyntaxException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (ConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		// For each organization searched and added from domain services
-		for (String organization : domainEndpoints.keySet()) {
-			log.info("TRYING ORGANIZATION :" + organization);
-			TypeableID patientId = ecr.getPatient().getIdMatchingType("MR"); // Get Patient ID that matches the
-																				// organization
-			if (patientId != null) {
-				log.info("FOUND MATCHING PATIENTID MR:" + patientId);
-				// For each url pulled by that organization key
-				for (URL endpoint : domainEndpoints.get(organization)) {
-					log.info("Trying endpoint:" + endpoint.toString());
-					FHIRClient.setServerBaseUrl(endpoint.toString());
-					FHIRClient.initializeClient(); // This is an expensive operation
-					String identifier = patientId.getvalue();
-					Bundle fhirPatientBundle = null;
-					// Test the connection
-					try {
-						log.debug("Looking up Patient from fhir service:" + identifier);
-						if (DomainService.getDefaultUsername() != null) { //organization.equalsIgnoreCase("Regenstrief"))
-							fhirPatientBundle = FHIRClient.getPatientUsingIdentifierAndOrganization(identifier,
-									organization);
-						}
-						else
-							fhirPatientBundle = FHIRClient.getPatient(ecr.getPatient().getname());
-					} catch (FhirClientConnectionException e) {
-						ecr.getNotes().add(e.toString());
-						return new ResponseEntity<ECR>(ecr, HttpStatus.FAILED_DEPENDENCY);
-					}
-					getFHIRRecords(ecr, fhirPatientBundle, FHIRClient.getClient());
-				}
-			}
-		}
-
-		// DT - If date of onset is empty then look for the triggering lab result that
-		// is positive and use it as the date.
-		updateDateOfOnset(ecr);
-
-		// Replace the old record in the PHCR
-		String ecrStr = this.ecrConverter.convertToDatabaseColumn(ecr);
-		log.info("PUTTING THIS ECR RECORD:" + ecr.toString());
-		log.info("ECR JSON=" + ecrStr);
-		try {
-			PHCRClient.putECR(ecr);
-		} catch (HTTPException e) {
-			log.error("Error putting ECR from FHIRController.", e);
-			ecr.getNotes().add(e.getMessage());
-			returnStatus = HttpStatus.NO_CONTENT;
-			return new ResponseEntity<ECR>(ecr, returnStatus);
-		}
-		if (scheduled) {
-			updateJobEntry(ecr);
-		}
+		ECR ecr = new ECR();
+		Bundle returnBundle = new Bundle();
+		IdDt idType = new IdDt(id);
+		Patient patient = FHIRClient.getPatient(idType);
+		returnBundle.addEntry().setResource(patient).setFullUrl(patient.getId().getValue());
+		
+		getFHIRRecords(ecr, returnBundle, FHIRClient.getClient());
 		return new ResponseEntity<ECR>(ecr, returnStatus);
-	}
-
-	@RequestMapping(value = "/FHIRGET", method = RequestMethod.POST, produces = "application/json")
-	public ResponseEntity<ECRJob> schedule(@RequestParam(name = "id") int id,
-			@RequestParam(name = "cron", required = false, defaultValue = "0 0 * * *") String cron) {
-		ECR ecr = PHCRClient.requestECRById(id);
-		ECRJob job = new ECRJob(ecr);
-		try {
-			SchedulerService.addScheduleService(cron, job);
-		} catch (Exception e) {
-			return new ResponseEntity<ECRJob>(job, HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-		ECRJobRepository.save(job);
-		return new ResponseEntity<ECRJob>(job, HttpStatus.OK);
 	}
 
 	void getFHIRRecords(ECR ecr, Bundle fhirPatientBundle, IGenericClient client) {
@@ -349,34 +239,13 @@ public class FHIRController {
 			for (LabOrderCode labcode : ecr.getPatient().getlabOrderCode()) {
 				for (LabResult labresult : labcode.getLaboratory_Results()) {
 					if (labresult.getValue().toLowerCase().contains("positive")) {
-						if (ControllerUtils.isSTICode(labresult)) {
-							if (!StringUtils.isBlank(labresult.getDate())) {
-								log.info("LabResult --- Found onset date of: " + labresult.getDate());
-								ecr.getPatient().setdateOfOnset(labresult.getDate());
-								break;
-							}
+						if (!StringUtils.isBlank(labresult.getDate())) {
+							log.info("LabResult --- Found onset date of: " + labresult.getDate());
+							ecr.getPatient().setdateOfOnset(labresult.getDate());
+							break;
 						}
 					}
 				}
-			}
-		}
-	}
-
-	public void updateJobEntry(ECR ecr) {
-		List<ECRJob> searchResults = ECRJobRepository.findByReportIdOrderByIdDesc(ecr.getECRId());
-		if (searchResults.size() == 0) {
-			log.info("JOBUPDATE --- No Job found for Id " + ecr.getECRId() + "!");
-			return;
-		}
-		ECRJob job = searchResults.get(0);
-		job.instantUpdate();
-		ECRJobRepository.save(job);
-		if (job.getStatusCode().equalsIgnoreCase("C")) {
-			try {
-				SchedulerService.removeScheduleService(job);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
 		}
 	}
@@ -472,8 +341,7 @@ public class FHIRController {
 					ecrMedication.setDate(HAPIFHIRUtil.getDate(medicationAdministration.getEffectiveTime()).toString());
 				}
 				log.info("MEDICATIONADMINISTRATION --- ECRCode: " + ecrCode);
-				if (ControllerUtils.isSTIMed(ecrCode)
-						&& !ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
+				if (!ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
 					log.info("MEDICATIONADMINISTRATION --- Found New Entry: " + ecrCode);
 					ecr.getPatient().getMedicationProvided().add(ecrMedication);
 				} else {
@@ -531,46 +399,39 @@ public class FHIRController {
 						ecrCode.setsystem(concept.getsystem());
 						ecrCode.setdisplay(concept.getdisplay());
 
-						if (ControllerUtils.isSTIMed(ecrCode)) {
-							break; // Found a code already so stop here.
+					}
+					for (ca.uhn.fhir.model.dstu2.resource.MedicationDispense.DosageInstruction dosageInstruction : medicationDispense
+							.getDosageInstruction()) {
+						Dosage ecrDosage = new Dosage();
+						IDatatype doseUntyped = dosageInstruction.getDose();
+						if (doseUntyped != null) {
+							log.info("MEDICATIONDISPENSE --- Found Dosage: " + doseUntyped.toString());
+							if (doseUntyped instanceof SimpleQuantityDt) {
+								SimpleQuantityDt doseTyped = (SimpleQuantityDt) doseUntyped;
+								log.info("MEDICATIONDISPENSE --- Dosage is of SimpleQuentityDt Type");
+								ecrDosage.setValue(doseTyped.getValue().toString());
+								ecrDosage.setUnit(doseTyped.getUnit());
+								ecrMedication.setDosage(ecrDosage);
+							}
+							String periodUnit = dosageInstruction.getTiming().getRepeat().getPeriodUnits();
+							BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
+							Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
+							String commonFrequency = "" + frequency + " times per " + period + " " + periodUnit;
+							log.info("MEDICATIONDISPENSE --- Found Frequency: " + commonFrequency);
+							ecrMedication.setFrequency(commonFrequency);
+						} else {
+							log.info("MEDICATIONDISPENSE --- Not Found");
 						}
 					}
-					if (ControllerUtils.isSTIMed(ecrCode)) {
-						for (ca.uhn.fhir.model.dstu2.resource.MedicationDispense.DosageInstruction dosageInstruction : medicationDispense
-								.getDosageInstruction()) {
-							Dosage ecrDosage = new Dosage();
-							IDatatype doseUntyped = dosageInstruction.getDose();
-							if (doseUntyped != null) {
-								log.info("MEDICATIONDISPENSE --- Found Dosage: " + doseUntyped.toString());
-								if (doseUntyped instanceof SimpleQuantityDt) {
-									SimpleQuantityDt doseTyped = (SimpleQuantityDt) doseUntyped;
-									log.info("MEDICATIONDISPENSE --- Dosage is of SimpleQuentityDt Type");
-									ecrDosage.setValue(doseTyped.getValue().toString());
-									ecrDosage.setUnit(doseTyped.getUnit());
-									ecrMedication.setDosage(ecrDosage);
-								}
-								String periodUnit = dosageInstruction.getTiming().getRepeat().getPeriodUnits();
-								BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
-								Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
-								String commonFrequency = "" + frequency + " times per " + period + " " + periodUnit;
-								log.info("MEDICATIONDISPENSE --- Found Frequency: " + commonFrequency);
-								ecrMedication.setFrequency(commonFrequency);
-							} else {
-								log.info("MEDICATIONDISPENSE --- Not Found");
-							}
-						}
-						Date timeDispensed = medicationDispense.getWhenHandedOver();
-						log.info("MEDICATIONDISPENSE --- Found Handed Over Date: " + timeDispensed);
-						if (timeDispensed != null) {
-							ecrMedication.setDate(DateUtil.dateTimeToStdString(timeDispensed));
-						}
-						log.info("MEDICATIONDISPENSE --- ECRCode: " + ecrCode);
-						if (!ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
-							log.info("=======>MEDICATIONDISPENSE --- Found New Entry and added to ECR: " + ecrCode);
-							ecr.getPatient().getMedicationProvided().add(ecrMedication);
-						} else {
-							log.info("MEDICATIONDISPENSE --- Didn't Match or found duplicate! " + ecrCode);
-						}
+					Date timeDispensed = medicationDispense.getWhenHandedOver();
+					log.info("MEDICATIONDISPENSE --- Found Handed Over Date: " + timeDispensed);
+					if (timeDispensed != null) {
+						ecrMedication.setDate(DateUtil.dateTimeToStdString(timeDispensed));
+					}
+					log.info("MEDICATIONDISPENSE --- ECRCode: " + ecrCode);
+					if (!ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
+						log.info("=======>MEDICATIONDISPENSE --- Found New Entry and added to ECR: " + ecrCode);
+						ecr.getPatient().getMedicationProvided().add(ecrMedication);
 					} else {
 						log.info("MEDICATIONDISPENSE --- Didn't Match or found duplicate! " + ecrCode);
 					}
@@ -612,53 +473,47 @@ public class FHIRController {
 						ecrCode.setcode(concept.getcode());
 						ecrCode.setsystem(concept.getsystem());
 						ecrCode.setdisplay(concept.getdisplay());
-						if (ControllerUtils.isSTIMed(ecrCode)) {
-							break; // Found a code already so stop here.
-						}
 					}
 				}
-				if (ControllerUtils.isSTIMed(ecrCode)) {
-					for (DosageInstruction dosageInstruction : medicationOrder.getDosageInstruction()) {
-						Dosage ecrDosage = new Dosage();
-						IDatatype doseUntyped = dosageInstruction.getDose();
-						if (doseUntyped != null) {
-							log.info("MEDICATIONORDER --- Found Dosage: " + doseUntyped.toString());
-							if (doseUntyped instanceof SimpleQuantityDt) {
-								SimpleQuantityDt doseTyped = (SimpleQuantityDt) doseUntyped;
-								log.info("MEDICATIONORDER --- Dosage is of SimpleQuentityDt Type");
-								ecrDosage.setValue(doseTyped.getValue().toString());
-								ecrDosage.setUnit(doseTyped.getUnit());
-								ecrMedication.setDosage(ecrDosage);
-							}
-							String periodUnit = dosageInstruction.getTiming().getRepeat().getPeriodUnits();
-							BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
-							Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
-							// String commonFrequency= "" + frequency + " times per " + period + " " +
-							// periodUnit;
-							// log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
-							// ecrMedication.setFrequency(commonFrequency);
-						} else {
-							log.info("MEDICATIONORDER --- DOSE NOT FOUND.");
+				for (DosageInstruction dosageInstruction : medicationOrder.getDosageInstruction()) {
+					Dosage ecrDosage = new Dosage();
+					IDatatype doseUntyped = dosageInstruction.getDose();
+					if (doseUntyped != null) {
+						log.info("MEDICATIONORDER --- Found Dosage: " + doseUntyped.toString());
+						if (doseUntyped instanceof SimpleQuantityDt) {
+							SimpleQuantityDt doseTyped = (SimpleQuantityDt) doseUntyped;
+							log.info("MEDICATIONORDER --- Dosage is of SimpleQuentityDt Type");
+							ecrDosage.setValue(doseTyped.getValue().toString());
+							ecrDosage.setUnit(doseTyped.getUnit());
+							ecrMedication.setDosage(ecrDosage);
 						}
-					}
-
-					log.info("MEDICATIONORDER --- ECRCode: " + ecrCode);
-					if (ControllerUtils.isSTIMed(ecrCode)
-							&& !ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
-						log.info("MEDICATIONORDER --- Found New Entry: " + ecrCode);
-						ecr.getPatient().getMedicationProvided().add(ecrMedication);
+						String periodUnit = dosageInstruction.getTiming().getRepeat().getPeriodUnits();
+						BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
+						Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
+						// String commonFrequency= "" + frequency + " times per " + period + " " +
+						// periodUnit;
+						// log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
+						// ecrMedication.setFrequency(commonFrequency);
 					} else {
-						log.info("MEDICATIONORDER --- Didn't Match or found duplicate! " + ecrCode);
+						log.info("MEDICATIONORDER --- DOSE NOT FOUND.");
 					}
-					// String periodUnit =
-					// dosageInstruction.getTiming().getRepeat().getPeriodUnits();
-					// BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
-					// Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
-					// /*String commonFrequency= "" + frequency + " times per " + period + " " +
-					// periodUnit;
-					// log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
-					// ecrMedication.setFrequency(commonFrequency); */
 				}
+
+				log.info("MEDICATIONORDER --- ECRCode: " + ecrCode);
+				if (!ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
+					log.info("MEDICATIONORDER --- Found New Entry: " + ecrCode);
+					ecr.getPatient().getMedicationProvided().add(ecrMedication);
+				} else {
+					log.info("MEDICATIONORDER --- Didn't Match or found duplicate! " + ecrCode);
+				}
+				// String periodUnit =
+				// dosageInstruction.getTiming().getRepeat().getPeriodUnits();
+				// BigDecimal period = dosageInstruction.getTiming().getRepeat().getPeriod();
+				// Integer frequency = dosageInstruction.getTiming().getRepeat().getFrequency();
+				// /*String commonFrequency= "" + frequency + " times per " + period + " " +
+				// periodUnit;
+				// log.info("MEDICATIONORDER --- Found Frequency: " + commonFrequency);
+				// ecrMedication.setFrequency(commonFrequency); */
 
 				PeriodDt period = medicationOrder.getDispenseRequest().getValidityPeriod();
 				if ( period != null && period.getStart() != null ) {
@@ -666,8 +521,7 @@ public class FHIRController {
 					ecrMedication.setDate(period.getStart().toString());
 				}
 				log.info("MEDICATIONORDER --- ECRCode: " + ecrCode);
-				if (ControllerUtils.isSTIMed(ecrCode)
-						&& !ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
+				if (!ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
 					log.info("MEDICATIONORDER --- Found New Entry: " + ecrCode);
 					ecr.getPatient().getMedicationProvided().add(ecrMedication);
 				} else {
@@ -745,8 +599,7 @@ public class FHIRController {
 					}
 					log.info("MEDICATIONSTATEMENT  --- ECRCode: " + ecrCode);
 				}
-				if (ControllerUtils.isSTIMed(ecrCode)
-						&& !ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
+				if (!ecr.getPatient().getMedicationProvided().contains(ecrMedication)) {
 					log.info("MEDICATIONSTATEMENT  --- Found New Entry: " + ecrCode);
 					ecr.getPatient().getMedicationProvided().add(ecrMedication);
 				} else {
@@ -809,22 +662,12 @@ public class FHIRController {
 			log.info("CONDITION --- Trying coding: " + coding.getDisplay());
 			CodeableConcept concept = FHIRCoding2ECRConcept(coding);
 			log.info("CONDITION --- Translated to ECRconcept:" + concept.toString());
-			if (ControllerUtils.isSTICode(concept) && !ecr.getPatient().getsymptoms().contains(concept)) {
+			if (!ecr.getPatient().getsymptoms().contains(concept)) {
 				log.info("CONDITION --- SYMPTOM MATCH!" + concept.toString());
 				ecr.getPatient().getsymptoms().add(concept);
 				break; // Stop once we get a codingDt that matches our list of codes.
 			}
 		}
-	}
-
-	protected boolean conceptIsSTI(CodeableConceptDt code) {
-		for (CodingDt coding : code.getCoding()) {
-			CodeableConcept concept = FHIRCoding2ECRConcept(coding);
-			if (ControllerUtils.isSTICode(concept)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	public void handleSingularCondition(ECR ecr, Condition condition) {
@@ -856,7 +699,7 @@ public class FHIRController {
 			log.info("CONDITION --- Trying coding: " + coding.getDisplay());
 			CodeableConcept concept = FHIRCoding2ECRConcept(coding);
 			log.info("CONDITION --- Translated to ECRconcept:" + concept.toString());
-			if (ControllerUtils.isSTIDiagnosisCode(concept) && (ecr.getPatient().getDiagnosis() == null
+			if ((ecr.getPatient().getDiagnosis() == null
 					|| !ecr.getPatient().getDiagnosis().getCode().equals(concept.getcode()))) {
 				log.info("CONDITION ---DIAGNOSIS MATCH!" + concept.toString());
 				Diagnosis updatedDiagnosis = new Diagnosis();
@@ -915,8 +758,7 @@ public class FHIRController {
 				for (CodeableConceptDt reason : encounter.getReason()) {
 					for (CodingDt coding : reason.getCoding()) {
 						CodeableConcept concept = FHIRCoding2ECRConcept(coding);
-						if (concept.getsystem().equals("SNOMED CT") && ControllerUtils.isSTICode(concept)
-								&& !ecr.getPatient().getsymptoms().contains(concept)) {
+						if (concept.getsystem().equals("SNOMED CT") && !ecr.getPatient().getsymptoms().contains(concept)) {
 							ecr.getPatient()
 									.setvisitDateTime(DateUtil.dateTimeToStdString(encounter.getPeriod().getStart()));
 						}

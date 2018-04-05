@@ -1,4 +1,4 @@
-package gatech.edu.FHIRController;
+package gatech.edu.DeathRecordPuller;
 
 import java.util.Date;
 
@@ -17,11 +17,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @EnableAutoConfiguration
-@EntityScan("gatech.edu.STIECR.DB.model")
-@EnableJpaRepositories("gatech.edu.STIECR.DB.repo")
 @ComponentScan("gatech.edu.common.FHIR.client")
-@ComponentScan("gatech.edu.FHIRController.Controller")
-@ComponentScan("gatech.edu.FHIRController.PHCRClient")
+@ComponentScan("gatech.edu.DeathRecordPuller.Controller")
 @SpringBootApplication
 public class ApplicationTest extends SpringBootServletInitializer{
 

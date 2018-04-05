@@ -1,4 +1,4 @@
-package gatech.edu.FHIRController.util;
+package gatech.edu.DeathRecordPuller.util;
 
 import java.text.DateFormat;
 import java.text.ParseException;
