@@ -752,47 +752,45 @@ public class DeathRecordController {
 				Observation observation = (Observation) entry.getResource();
 				CodeableConceptDt code = observation.getCode();
 				for (CodingDt coding : code.getCoding()) {
-					if (coding.getCode().equalsIgnoreCase("laboratory")) { // HIT! Found a lab result
-						LabOrderCode labOrder = new LabOrderCode();
-						labOrder.setcode(coding.getCode());
-						labOrder.setdisplay(coding.getDisplay());
-						labOrder.setsystem(coding.getSystem());
-						LabResult labResult = new LabResult();
-						IDatatype untypedValue = observation.getValue();
-						if (untypedValue instanceof QuantityDt) {
-							labResult.setValue(((QuantityDt) untypedValue).getValue().toString());
-						} else
-						if (untypedValue instanceof CodeableConcept) {
-							labResult.setValue(((CodeableConcept) untypedValue).getdisplay());
-						} else
-						if (untypedValue instanceof StringDt) {
-							labResult.setValue(((StringDt) untypedValue).toString());
-						} else
-						if (untypedValue instanceof RangeDt) {
-							RangeDt range = (RangeDt) untypedValue;
-							labResult.setValue("High:" + range.getHigh() + ";low:" + range.getLow());
-						} else
-						if (untypedValue instanceof RatioDt) {
-							RatioDt ratio = (RatioDt) untypedValue;
-							labResult.setValue(
-									ratio.getNumerator().toString() + "/" + ratio.getDenominator().toString());
-						} else
-						if (untypedValue instanceof SampledDataDt) {
-							labResult.setValue(((SampledDataDt) untypedValue).getData());
-						} else
-						if (untypedValue instanceof TimeDt) {
-							labResult.setValue(((TimeDt) untypedValue).getValue());
-						} else
-						if (untypedValue instanceof DateTimeDt) {
-							labResult.setValue(((DateTimeDt) untypedValue).getValueAsString());
-						} else
-						if (untypedValue instanceof PeriodDt) {
-							PeriodDt period = (PeriodDt) untypedValue;
-							labResult.setValue(
-									"Start:" + period.getStart().toString() + ";End" + period.getEnd().toString());
-						}
-						labOrder.getLaboratory_Results().add(labResult);
+					LabOrderCode labOrder = new LabOrderCode();
+					labOrder.setcode(coding.getCode());
+					labOrder.setdisplay(coding.getDisplay());
+					labOrder.setsystem(coding.getSystem());
+					LabResult labResult = new LabResult();
+					IDatatype untypedValue = observation.getValue();
+					if (untypedValue instanceof QuantityDt) {
+						labResult.setValue(((QuantityDt) untypedValue).getValue().toString());
+					} else
+					if (untypedValue instanceof CodeableConcept) {
+						labResult.setValue(((CodeableConcept) untypedValue).getdisplay());
+					} else
+					if (untypedValue instanceof StringDt) {
+						labResult.setValue(((StringDt) untypedValue).toString());
+					} else
+					if (untypedValue instanceof RangeDt) {
+						RangeDt range = (RangeDt) untypedValue;
+						labResult.setValue("High:" + range.getHigh() + ";low:" + range.getLow());
+					} else
+					if (untypedValue instanceof RatioDt) {
+						RatioDt ratio = (RatioDt) untypedValue;
+						labResult.setValue(
+								ratio.getNumerator().toString() + "/" + ratio.getDenominator().toString());
+					} else
+					if (untypedValue instanceof SampledDataDt) {
+						labResult.setValue(((SampledDataDt) untypedValue).getData());
+					} else
+					if (untypedValue instanceof TimeDt) {
+						labResult.setValue(((TimeDt) untypedValue).getValue());
+					} else
+					if (untypedValue instanceof DateTimeDt) {
+						labResult.setValue(((DateTimeDt) untypedValue).getValueAsString());
+					} else
+					if (untypedValue instanceof PeriodDt) {
+						PeriodDt period = (PeriodDt) untypedValue;
+						labResult.setValue(
+								"Start:" + period.getStart().toString() + ";End" + period.getEnd().toString());
 					}
+					labOrder.getLaboratory_Results().add(labResult);
 				}
 			}
 			observations = FHIRClient.getNextPage(observations);
