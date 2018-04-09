@@ -225,7 +225,12 @@ public class DeathRecordController {
 	}
 
 	void handlePatient(ECR ecr, ca.uhn.fhir.model.dstu2.resource.Patient patient) {
+		log.info("PATIENT -- Working with patient:"+ patient.toString());
 		if(!patient.getName().isEmpty()) {
+			log.info("PATIENT -- Patient name found!");
+			log.info("PATIENT -- Patient name 0:" + patient.getName().get(0).toString());
+			log.info("PATIENT -- Patient name 0 family:" + patient.getName().get(0).getFamily().get(0).toString());
+			log.info("PATIENT -- Patient name 0 given:" + patient.getName().get(0).getGiven().get(0).toString());
 			HumanNameDt nameDt = patient.getName().get(0);
 			Name name = new Name();
 			name.setfamily(nameDt.getFamily().get(0).getValue());
