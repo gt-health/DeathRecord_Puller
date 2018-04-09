@@ -235,6 +235,7 @@ public class DeathRecordController {
 			Name name = new Name();
 			name.setfamily(nameDt.getFamily().get(0).getValue());
 			name.setgiven(nameDt.getGiven().get(0).getValue());
+			ecr.getPatient().setname(name);
 		}
 		ecr.getPatient().setbirthDate(patient.getBirthDate().toString());
 		IDatatype deceasedValue = patient.getDeceased();
