@@ -22,6 +22,7 @@ import ca.uhn.fhir.model.api.IDatatype;
 import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
 import ca.uhn.fhir.model.dstu2.composite.CodingDt;
 import ca.uhn.fhir.model.dstu2.composite.ContactPointDt;
+import ca.uhn.fhir.model.dstu2.composite.HumanNameDt;
 import ca.uhn.fhir.model.dstu2.composite.PeriodDt;
 import ca.uhn.fhir.model.dstu2.composite.QuantityDt;
 import ca.uhn.fhir.model.dstu2.composite.RangeDt;
@@ -224,6 +225,12 @@ public class DeathRecordController {
 	}
 
 	void handlePatient(ECR ecr, ca.uhn.fhir.model.dstu2.resource.Patient patient) {
+		if(!patient.getName().isEmpty()) {
+			HumanNameDt nameDt = patient.getName().get(0);
+			Name name = new Name();
+			name.setfamily(nameDt.getFamily().get(0).getValue());
+			name.setgiven(nameDt.getGiven().get(0).getValue());
+		}
 		ecr.getPatient().setbirthDate(patient.getBirthDate().toString());
 		IDatatype deceasedValue = patient.getDeceased();
 		if (deceasedValue != null && deceasedValue instanceof DateDt) {
