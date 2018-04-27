@@ -11,8 +11,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -72,6 +75,7 @@ import gatech.edu.STIECR.JSON.Provider;
 import gatech.edu.STIECR.JSON.utils.DateUtil;
 import gatech.edu.common.FHIR.client.ClientService;
 
+@CrossOrigin
 @RestController
 public class DeathRecordController {
 
@@ -86,7 +90,7 @@ public class DeathRecordController {
 	}
 
 	@RequestMapping(value = "/DeathRecord", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<ECR> DeathRecord(@RequestParam(value = "id") int id) {
+	public ResponseEntity<ECR> DeathRecord(@RequestParam(value = "id") String id) {
 		HttpStatus returnStatus = HttpStatus.OK;
 		ECR ecr = new ECR();
 		Bundle returnBundle = new Bundle();
@@ -95,7 +99,27 @@ public class DeathRecordController {
 		returnBundle.addEntry().setResource(patient).setFullUrl(patient.getId().getValue());
 		
 		getFHIRRecords(ecr, returnBundle, FHIRClient.getClient());
-		return new ResponseEntity<ECR>(ecr, returnStatus);
+		HttpHeaders responseHeaders = new HttpHeaders();
+		List<HttpMethod> allowedMethods = new ArrayList<HttpMethod>();
+		allowedMethods.add(HttpMethod.GET);
+		allowedMethods.add(HttpMethod.POST);
+		allowedMethods.add(HttpMethod.PUT);
+		allowedMethods.add(HttpMethod.DELETE);		
+		
+		List<String> allowedHeaders = new ArrayList<String>();
+		allowedHeaders.add("Content-Type");
+		allowedHeaders.add("Accept");
+		allowedHeaders.add("Accept-Encoding");
+		allowedHeaders.add("Accept-Language");
+		allowedHeaders.add("X-Requested-With");
+		allowedHeaders.add("remember-me");
+		
+		responseHeaders.setAccessControlAllowOrigin("*");
+		responseHeaders.setAccessControlAllowMethods(allowedMethods);
+		responseHeaders.setAccessControlAllowHeaders(allowedHeaders);
+		responseHeaders.setAccessControlAllowCredentials(true);
+		responseHeaders.setAccessControlMaxAge(3600L);
+		return new ResponseEntity<ECR>(ecr, responseHeaders, returnStatus);
 	}
 
 	void getFHIRRecords(ECR ecr, Bundle fhirPatientBundle, IGenericClient client) {
