@@ -75,7 +75,7 @@ import gatech.edu.STIECR.JSON.Provider;
 import gatech.edu.STIECR.JSON.utils.DateUtil;
 import gatech.edu.common.FHIR.client.ClientService;
 
-@CrossOrigin
+@CrossOrigin()
 @RestController
 public class DeathRecordController {
 
