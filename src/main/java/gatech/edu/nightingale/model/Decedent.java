@@ -1,5 +1,7 @@
 package gatech.edu.nightingale.model;
 
+import org.hl7.fhir.dstu3.model.Address;
+
 import ca.uhn.fhir.model.api.annotation.Child;
 import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.model.api.annotation.Extension;
@@ -59,8 +61,6 @@ public class Decedent extends Patient {
 	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-Education-extension", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "SDR Education Extension")
 	private CodeableConceptDt educationExtension;
-	@Child(name = "address")
-	private PostalAddress address;
 	@Child(name = "SurvivingSpouse")
 	private Contact survivingSpouse;
 	@Child(name = "Father")
@@ -69,7 +69,7 @@ public class Decedent extends Patient {
 	private Contact Mother;
 	@Child(name = "Informant")
 	private Contact Informant;
-
+	
 	public Decedent() {
 		super();
 	}
@@ -152,14 +152,6 @@ public class Decedent extends Patient {
 
 	public void setEducationExtension(CodeableConceptDt educationExtension) {
 		this.educationExtension = educationExtension;
-	}
-
-	public PostalAddress getAddress() {
-		return address;
-	}
-
-	public void setAddress(PostalAddress address) {
-		this.address = address;
 	}
 
 	public Contact getSurvivingSpouse() {

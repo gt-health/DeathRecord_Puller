@@ -10,7 +10,7 @@ import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
 import ca.uhn.fhir.model.dstu2.composite.ResourceReferenceDt;
 import ca.uhn.fhir.model.primitive.BooleanDt;
 
-@ResourceDef(name = "PostalAdress", profile = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/shr-core-PostalAddress")
+@ResourceDef(name = "PostalAddress", profile = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/shr-core-PostalAddress")
 public class PostalAddress extends Address {
 	private static final long serialVersionUID = 1L;
 
@@ -36,4 +36,5 @@ public class PostalAddress extends Address {
 	public void setInsideCityLimits(BooleanDt insideCityLimits) {
 		this.insideCityLimits = insideCityLimits;
 	}
+	
 }
