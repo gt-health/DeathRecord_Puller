@@ -74,7 +74,7 @@ public class ClientService {
 	
 	public ClientService(String serverBaseUrl) {
 		this();
-		this.serverBaseUrl= serverBaseUrl;
+		this.serverBaseUrl= serverBaseUrl;	
 	}
 	
 	public void initializeClient() {
