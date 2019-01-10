@@ -101,6 +101,9 @@ public class IngestAddress {
 	@SerializedName("country")
 	private String country = null;
 
+	@SerializedName("insidecitylimits")
+	private Boolean insideCityLimits = null;
+
 	public IngestAddress type(TypeEnum type) {
 		this.type = type;
 		return this;
@@ -204,21 +207,19 @@ public class IngestAddress {
 		return this;
 	}
 
-	/**
-	 * Get state
-	 * 
-	 * @return state
-	 **
-	 *         public String getState() { return state; }
-	 * 
-	 *         public void setState(String state) { this.state = state; }
-	 * 
-	 *         public Address postalCode(String postalCode) { this.postalCode =
-	 *         postalCode; return this; }
-	 * 
-	 *         /** Get postalCode
-	 * @return postalCode
-	 **/
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
+	}
+
+	public IngestAddress postalCode(String postalCode) {
+		this.postalCode = postalCode;
+		return this;
+	}
+
 	public String getPostalCode() {
 		return postalCode;
 	}
@@ -245,6 +246,24 @@ public class IngestAddress {
 		this.country = country;
 	}
 
+	public IngestAddress insideCityLimits(boolean insideCityLimits) {
+		this.insideCityLimits = insideCityLimits;
+		return this;
+	}
+
+	/**
+	 * Get insideCityLimits
+	 * 
+	 * @return insideCityLimits
+	 **/
+	public boolean getInsideCityLimits() {
+		return insideCityLimits;
+	}
+
+	public void setInsideCityLimits(boolean insideCityLimits) {
+		this.insideCityLimits = insideCityLimits;
+	}
+
 	@Override
 	public boolean equals(java.lang.Object o) {
 		if (this == o) {
@@ -257,12 +276,13 @@ public class IngestAddress {
 		return Objects.equals(this.type, address.type) && Objects.equals(this.text, address.text)
 				&& Objects.equals(this.line, address.line) && Objects.equals(this.city, address.city)
 				&& Objects.equals(this.district, address.district) && Objects.equals(this.state, address.state)
-				&& Objects.equals(this.postalCode, address.postalCode) && Objects.equals(this.country, address.country);
+				&& Objects.equals(this.postalCode, address.postalCode) && Objects.equals(this.country, address.country)
+				&& Objects.equals(this.insideCityLimits, address.insideCityLimits);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(type, text, line, city, district, state, postalCode, country);
+		return Objects.hash(type, text, line, city, district, state, postalCode, country, insideCityLimits);
 	}
 
 	@Override
@@ -278,6 +298,7 @@ public class IngestAddress {
 		sb.append("    state: ").append(toIndentedString(state)).append("\n");
 		sb.append("    postalCode: ").append(toIndentedString(postalCode)).append("\n");
 		sb.append("    country: ").append(toIndentedString(country)).append("\n");
+		sb.append("    insideCityLimits: ").append(toIndentedString(insideCityLimits)).append("\n");
 		sb.append("}");
 		return sb.toString();
 	}

@@ -230,10 +230,10 @@ public class IngestDecedent {
 	private Boolean servedInArmedForces = null;
 
 	/**
-	 * Gets or Sets martialStatusAtDeath
+	 * Gets or Sets maritalStatusAtDeath
 	 */
-	@JsonAdapter(MartialStatusAtDeathEnum.Adapter.class)
-	public enum MartialStatusAtDeathEnum {
+	@JsonAdapter(MaritalStatusAtDeathEnum.Adapter.class)
+	public enum MaritalStatusAtDeathEnum {
 		A("A"),
 
 		D("D"),
@@ -258,7 +258,7 @@ public class IngestDecedent {
 
 		private String value;
 
-		MartialStatusAtDeathEnum(String value) {
+		MaritalStatusAtDeathEnum(String value) {
 			this.value = value;
 		}
 
@@ -271,8 +271,8 @@ public class IngestDecedent {
 			return String.valueOf(value);
 		}
 
-		public static MartialStatusAtDeathEnum fromValue(String text) {
-			for (MartialStatusAtDeathEnum b : MartialStatusAtDeathEnum.values()) {
+		public static MaritalStatusAtDeathEnum fromValue(String text) {
+			for (MaritalStatusAtDeathEnum b : MaritalStatusAtDeathEnum.values()) {
 				if (String.valueOf(b.value).equals(text)) {
 					return b;
 				}
@@ -280,23 +280,23 @@ public class IngestDecedent {
 			return null;
 		}
 
-		public static class Adapter extends TypeAdapter<MartialStatusAtDeathEnum> {
+		public static class Adapter extends TypeAdapter<MaritalStatusAtDeathEnum> {
 			@Override
-			public void write(final JsonWriter jsonWriter, final MartialStatusAtDeathEnum enumeration)
+			public void write(final JsonWriter jsonWriter, final MaritalStatusAtDeathEnum enumeration)
 					throws IOException {
 				jsonWriter.value(enumeration.getValue());
 			}
 
 			@Override
-			public MartialStatusAtDeathEnum read(final JsonReader jsonReader) throws IOException {
+			public MaritalStatusAtDeathEnum read(final JsonReader jsonReader) throws IOException {
 				String value = jsonReader.nextString();
-				return MartialStatusAtDeathEnum.fromValue(String.valueOf(value));
+				return MaritalStatusAtDeathEnum.fromValue(String.valueOf(value));
 			}
 		}
 	}
 
-	@SerializedName("martialStatusAtDeath")
-	private MartialStatusAtDeathEnum martialStatusAtDeath = null;
+	@SerializedName("maritalStatusAtDeath")
+	private MaritalStatusAtDeathEnum maritalStatusAtDeath = null;
 
 	@SerializedName("placeOfDeath")
 	private IngestAddress placeOfDeath = null;
@@ -437,7 +437,7 @@ public class IngestDecedent {
 	private String occupationIndustry = null;
 
 	@SerializedName("relations")
-	private List<RelatedPerson> relations = null;
+	private List<IngestRelatedPerson> relations = null;
 
 	public IngestDecedent id(String id) {
 		this.id = id;
@@ -667,23 +667,23 @@ public class IngestDecedent {
 		this.servedInArmedForces = servedInArmedForces;
 	}
 
-	public IngestDecedent martialStatusAtDeath(MartialStatusAtDeathEnum martialStatusAtDeath) {
-		this.martialStatusAtDeath = martialStatusAtDeath;
+	public IngestDecedent maritalStatusAtDeath(MaritalStatusAtDeathEnum maritalStatusAtDeath) {
+		this.maritalStatusAtDeath = maritalStatusAtDeath;
 		return this;
 	}
 
 	/**
-	 * Get martialStatusAtDeath
+	 * Get maritalStatusAtDeath
 	 * 
-	 * @return martialStatusAtDeath
+	 * @return maritalStatusAtDeath
 	 **/
 
-	public MartialStatusAtDeathEnum getMartialStatusAtDeath() {
-		return martialStatusAtDeath;
+	public MaritalStatusAtDeathEnum getMaritalStatusAtDeath() {
+		return maritalStatusAtDeath;
 	}
 
-	public void setMartialStatusAtDeath(MartialStatusAtDeathEnum martialStatusAtDeath) {
-		this.martialStatusAtDeath = martialStatusAtDeath;
+	public void setMaritalStatusAtDeath(MaritalStatusAtDeathEnum maritalStatusAtDeath) {
+		this.maritalStatusAtDeath = maritalStatusAtDeath;
 	}
 
 	public IngestDecedent placeOfDeath(IngestAddress placeOfDeath) {
@@ -800,14 +800,14 @@ public class IngestDecedent {
 		this.occupationIndustry = occupationIndustry;
 	}
 
-	public IngestDecedent relations(List<RelatedPerson> relations) {
+	public IngestDecedent relations(List<IngestRelatedPerson> relations) {
 		this.relations = relations;
 		return this;
 	}
 
-	public IngestDecedent addRelationsItem(RelatedPerson relationsItem) {
+	public IngestDecedent addRelationsItem(IngestRelatedPerson relationsItem) {
 		if (this.relations == null) {
-			this.relations = new ArrayList<RelatedPerson>();
+			this.relations = new ArrayList<IngestRelatedPerson>();
 		}
 		this.relations.add(relationsItem);
 		return this;
@@ -819,11 +819,11 @@ public class IngestDecedent {
 	 * @return relations
 	 **/
 
-	public List<RelatedPerson> getRelations() {
+	public List<IngestRelatedPerson> getRelations() {
 		return relations;
 	}
 
-	public void setRelations(List<RelatedPerson> relations) {
+	public void setRelations(List<IngestRelatedPerson> relations) {
 		this.relations = relations;
 	}
 
@@ -843,7 +843,7 @@ public class IngestDecedent {
 				&& Objects.equals(this.gender, decedent.gender) && Objects.equals(this.address, decedent.address)
 				&& Objects.equals(this.birthplace, decedent.birthplace)
 				&& Objects.equals(this.servedInArmedForces, decedent.servedInArmedForces)
-				&& Objects.equals(this.martialStatusAtDeath, decedent.martialStatusAtDeath)
+				&& Objects.equals(this.maritalStatusAtDeath, decedent.maritalStatusAtDeath)
 				&& Objects.equals(this.placeOfDeath, decedent.placeOfDeath)
 				&& Objects.equals(this.placeOfDeathType, decedent.placeOfDeathType)
 				&& Objects.equals(this.disposition, decedent.disposition)
@@ -856,7 +856,7 @@ public class IngestDecedent {
 	@Override
 	public int hashCode() {
 		return Objects.hash(id, idtype, name, birthsex, ethnicity, race, age, telecom, gender, address, birthplace,
-				servedInArmedForces, martialStatusAtDeath, placeOfDeath, placeOfDeathType, disposition, education,
+				servedInArmedForces, maritalStatusAtDeath, placeOfDeath, placeOfDeathType, disposition, education,
 				occupationJob, occupationIndustry, relations);
 	}
 
@@ -877,7 +877,7 @@ public class IngestDecedent {
 		sb.append("    address: ").append(toIndentedString(address)).append("\n");
 		sb.append("    birthplace: ").append(toIndentedString(birthplace)).append("\n");
 		sb.append("    servedInArmedForces: ").append(toIndentedString(servedInArmedForces)).append("\n");
-		sb.append("    martialStatusAtDeath: ").append(toIndentedString(martialStatusAtDeath)).append("\n");
+		sb.append("    maritalStatusAtDeath: ").append(toIndentedString(maritalStatusAtDeath)).append("\n");
 		sb.append("    placeOfDeath: ").append(toIndentedString(placeOfDeath)).append("\n");
 		sb.append("    placeOfDeathType: ").append(toIndentedString(placeOfDeathType)).append("\n");
 		sb.append("    disposition: ").append(toIndentedString(disposition)).append("\n");

@@ -24,7 +24,7 @@ import java.io.IOException;
 /**
  * RelatedPerson
  */
-public class RelatedPerson {
+public class IngestRelatedPerson {
 	/**
 	 * Gets or Sets type
 	 */
@@ -90,7 +90,7 @@ public class RelatedPerson {
 	@SerializedName("telecom")
 	private String telecom = null;
 
-	public RelatedPerson type(TypeEnum type) {
+	public IngestRelatedPerson type(TypeEnum type) {
 		this.type = type;
 		return this;
 	}
@@ -109,7 +109,7 @@ public class RelatedPerson {
 		this.type = type;
 	}
 
-	public RelatedPerson name(String name) {
+	public IngestRelatedPerson name(String name) {
 		this.name = name;
 		return this;
 	}
@@ -128,7 +128,7 @@ public class RelatedPerson {
 		this.name = name;
 	}
 
-	public RelatedPerson address(IngestAddress address) {
+	public IngestRelatedPerson address(IngestAddress address) {
 		this.address = address;
 		return this;
 	}
@@ -147,7 +147,7 @@ public class RelatedPerson {
 		this.address = address;
 	}
 
-	public RelatedPerson telecom(String telecom) {
+	public IngestRelatedPerson telecom(String telecom) {
 		this.telecom = telecom;
 		return this;
 	}
@@ -174,7 +174,7 @@ public class RelatedPerson {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		RelatedPerson relatedPerson = (RelatedPerson) o;
+		IngestRelatedPerson relatedPerson = (IngestRelatedPerson) o;
 		return Objects.equals(this.type, relatedPerson.type) && Objects.equals(this.name, relatedPerson.name)
 				&& Objects.equals(this.address, relatedPerson.address)
 				&& Objects.equals(this.telecom, relatedPerson.telecom);
