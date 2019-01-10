@@ -1,5 +1,7 @@
 package gatech.edu.nightingale.model;
 
+import org.hl7.fhir.dstu3.model.StringType;
+
 import ca.uhn.fhir.model.api.annotation.Child;
 import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.model.api.annotation.Extension;
@@ -12,17 +14,17 @@ public class Facility {
 	@Child(name = "FacilityNameExtension")
 	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-FacilityName-extension", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "SDR FacilityName Extension")
-	private String facilityNameExtension;
+	private StringType facilityNameExtension;
 	@Child(name = "PostalAddressExtension")
 	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/shr-core-PostalAddress-extension", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "SDR PostalAddress Extension")
 	private PostalAddress postalAddressExtension;
 
-	public String getFacilityNameExtension() {
+	public StringType getFacilityNameExtension() {
 		return facilityNameExtension;
 	}
 
-	public void setFacilityNameExtension(String facilityNameExtension) {
+	public void setFacilityNameExtension(StringType facilityNameExtension) {
 		this.facilityNameExtension = facilityNameExtension;
 	}
 

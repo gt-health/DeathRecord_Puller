@@ -1,10 +1,13 @@
 package gatech.edu.nightingale.model;
 
+import org.hl7.fhir.dstu3.model.CodeableConcept;
+import org.hl7.fhir.dstu3.model.Coding;
+import org.hl7.fhir.dstu3.model.DateTimeType;
+import org.hl7.fhir.dstu3.model.Observation;
+import org.hl7.fhir.dstu3.model.Reference;
+
 import ca.uhn.fhir.model.api.annotation.ResourceDef;
-import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
-import ca.uhn.fhir.model.dstu2.composite.ResourceReferenceDt;
-import ca.uhn.fhir.model.dstu2.resource.Observation;
-import ca.uhn.fhir.model.primitive.DateTimeDt;
+
 
 @ResourceDef(name = "DatePronouncedDead", profile = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-causeOfDeath-DatePronouncedDead")
 public class DatePronouncedDead extends Observation {
@@ -12,10 +15,10 @@ public class DatePronouncedDead extends Observation {
 
 	public DatePronouncedDead() {
 		super();
-		this.setCode(new CodeableConceptDt("http://loinc.org", "80616-6"));
+		this.setCode(new CodeableConcept().addCoding(new Coding("http://loinc.org", "80616-6","")));
 	}
 
-	public DatePronouncedDead(ResourceReferenceDt subject, DateTimeDt valueDateTime) {
+	public DatePronouncedDead(Reference subject, DateTimeType valueDateTime) {
 		this();
 		this.setSubject(subject);
 		this.setValue(valueDateTime);

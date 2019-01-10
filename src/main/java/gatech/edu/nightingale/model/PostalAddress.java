@@ -1,13 +1,13 @@
 package gatech.edu.nightingale.model;
 
 import org.hl7.fhir.dstu3.model.Address;
+import org.hl7.fhir.dstu3.model.CodeableConcept;
+import org.hl7.fhir.dstu3.model.Reference;
 
 import ca.uhn.fhir.model.api.annotation.Child;
 import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.model.api.annotation.Extension;
 import ca.uhn.fhir.model.api.annotation.ResourceDef;
-import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
-import ca.uhn.fhir.model.dstu2.composite.ResourceReferenceDt;
 import ca.uhn.fhir.model.primitive.BooleanDt;
 
 @ResourceDef(name = "PostalAddress", profile = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/shr-core-PostalAddress")
@@ -24,7 +24,7 @@ public class PostalAddress extends Address {
 		this.setType(AddressType.POSTAL);
 	}
 
-	public PostalAddress(ResourceReferenceDt subject, CodeableConceptDt valueCodeableConcept) {
+	public PostalAddress(Reference subject, CodeableConcept valueCodeableConcept) {
 		this();
 		this.setInsideCityLimits(new BooleanDt(false));
 	}

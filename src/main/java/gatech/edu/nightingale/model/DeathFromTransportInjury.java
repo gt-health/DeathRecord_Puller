@@ -1,9 +1,11 @@
 package gatech.edu.nightingale.model;
 
+import org.hl7.fhir.dstu3.model.CodeableConcept;
+import org.hl7.fhir.dstu3.model.Coding;
+import org.hl7.fhir.dstu3.model.Observation;
+import org.hl7.fhir.dstu3.model.Reference;
+
 import ca.uhn.fhir.model.api.annotation.ResourceDef;
-import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
-import ca.uhn.fhir.model.dstu2.composite.ResourceReferenceDt;
-import ca.uhn.fhir.model.dstu2.resource.Observation;
 
 @ResourceDef(name = "DeathFromTransportInjury", profile = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-causeOfDeath-DeathFromTransportInjury")
 public class DeathFromTransportInjury extends Observation {
@@ -13,10 +15,10 @@ public class DeathFromTransportInjury extends Observation {
 	// https://nightingaleproject.github.io/fhir-death-record/guide/ValueSet-sdr-causeOfDeath-TransportRelationshipsVS.html
 	public DeathFromTransportInjury() {
 		super();
-		this.setCode(new CodeableConceptDt("http://loinc.org", "69448-9"));
+		this.setCode(new CodeableConcept().addCoding(new Coding("http://loinc.org", "69448-9","")));
 	}
 
-	public DeathFromTransportInjury(ResourceReferenceDt subject, CodeableConceptDt valueCodeableConcept) {
+	public DeathFromTransportInjury(Reference subject, CodeableConcept valueCodeableConcept) {
 		this();
 		this.setSubject(subject);
 		this.setValue(valueCodeableConcept);

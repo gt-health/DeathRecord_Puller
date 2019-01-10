@@ -1,10 +1,10 @@
 package gatech.edu.nightingale.model;
 
+import org.hl7.fhir.dstu3.model.Condition;
+import org.hl7.fhir.dstu3.model.DateTimeType;
+import org.hl7.fhir.dstu3.model.Reference;
+
 import ca.uhn.fhir.model.api.annotation.ResourceDef;
-import ca.uhn.fhir.model.dstu2.composite.ResourceReferenceDt;
-import ca.uhn.fhir.model.dstu2.resource.Condition;
-import ca.uhn.fhir.model.dstu2.valueset.ConditionClinicalStatusCodesEnum;
-import ca.uhn.fhir.model.primitive.DateTimeDt;
 
 @ResourceDef(name = "CauseOfDeathCondition", profile = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-causeOfDeath-CauseOfDeathCondition")
 public class CauseOfDeathCondition extends Condition {
@@ -12,20 +12,13 @@ public class CauseOfDeathCondition extends Condition {
 
 	public CauseOfDeathCondition() {
 		super();
-		this.setClinicalStatus(ConditionClinicalStatusCodesEnum.ACTIVE);
+		this.setClinicalStatus(ConditionClinicalStatus.ACTIVE);
 	}
 
-	public CauseOfDeathCondition(ResourceReferenceDt subject, DateTimeDt onset) {
+	public CauseOfDeathCondition(Reference subject, DateTimeType onset) {
 		this();
-		this.setPatient(subject);
+		this.setSubject(subject);
 		this.setOnset(onset);
 	}
 
-	public ResourceReferenceDt getSubject() {
-		return this.getPatient();
-	}
-
-	public void setSubject(ResourceReferenceDt subject) {
-		this.setPatient(subject);
-	}
 }

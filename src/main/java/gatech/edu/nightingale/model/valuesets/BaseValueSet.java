@@ -3,12 +3,16 @@ package gatech.edu.nightingale.model.valuesets;
 import java.util.Map;
 import java.util.TreeMap;
 
-import ca.uhn.fhir.model.dstu2.composite.CodeableConceptDt;
+import org.hl7.fhir.dstu3.model.CodeableConcept;
 
 public class BaseValueSet {
-	public static Map<String, CodeableConceptDt> map;
+	public static Map<String, CodeableConcept> map;
 
 	public BaseValueSet() {
-		map = new TreeMap<String, CodeableConceptDt>(String.CASE_INSENSITIVE_ORDER);
+		map = new TreeMap<String, CodeableConcept>(String.CASE_INSENSITIVE_ORDER);
+	}
+	
+	public CodeableConcept get(String key) {
+		return map.get(key);
 	}
 }

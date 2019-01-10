@@ -1,6 +1,6 @@
 package gatech.edu.nightingale.model.valuesets;
 
-public class DisspositionValueSet extends BaseValueSet {
+public class DispositionValueSet extends BaseValueSet {
 	public void init() {
 		ValueSetUtil.addMapping(map, "Donation", "449951000124101", "http://snomed.info/sct");
 		ValueSetUtil.addMapping(map, "Burial", "449971000124106", "http://snomed.info/sct");
