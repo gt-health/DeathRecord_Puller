@@ -14,6 +14,9 @@ package gatech.edu.DeathRecordPuller.EDRS.model;
 
 import java.util.Objects;
 import java.util.Arrays;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
@@ -46,6 +49,7 @@ public class IngestRelatedPerson {
 			this.value = value;
 		}
 
+		@JsonValue
 		public String getValue() {
 			return value;
 		}
@@ -55,6 +59,7 @@ public class IngestRelatedPerson {
 			return String.valueOf(value);
 		}
 
+		@JsonCreator
 		public static TypeEnum fromValue(String text) {
 			for (TypeEnum b : TypeEnum.values()) {
 				if (String.valueOf(b.value).equals(text)) {

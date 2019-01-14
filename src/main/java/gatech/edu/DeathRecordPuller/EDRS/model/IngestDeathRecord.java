@@ -14,6 +14,8 @@ package gatech.edu.DeathRecordPuller.EDRS.model;
 
 import java.util.Objects;
 import java.util.Arrays;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;

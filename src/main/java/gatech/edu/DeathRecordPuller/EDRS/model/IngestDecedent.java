@@ -14,6 +14,9 @@ package gatech.edu.DeathRecordPuller.EDRS.model;
 
 import java.util.Objects;
 import java.util.Arrays;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
@@ -66,6 +69,7 @@ public class IngestDecedent {
 			this.value = value;
 		}
 
+		@JsonValue
 		public String getValue() {
 			return value;
 		}
@@ -75,6 +79,7 @@ public class IngestDecedent {
 			return String.valueOf(value);
 		}
 
+		@JsonCreator
 		public static IdtypeEnum fromValue(String text) {
 			for (IdtypeEnum b : IdtypeEnum.values()) {
 				if (String.valueOf(b.value).equals(text)) {
@@ -119,6 +124,7 @@ public class IngestDecedent {
 			this.value = value;
 		}
 
+		@JsonValue
 		public String getValue() {
 			return value;
 		}
@@ -128,6 +134,7 @@ public class IngestDecedent {
 			return String.valueOf(value);
 		}
 
+		@JsonCreator
 		public static BirthsexEnum fromValue(String text) {
 			for (BirthsexEnum b : BirthsexEnum.values()) {
 				if (String.valueOf(b.value).equals(text)) {
@@ -185,6 +192,7 @@ public class IngestDecedent {
 			this.value = value;
 		}
 
+		@JsonValue
 		public String getValue() {
 			return value;
 		}
@@ -193,7 +201,8 @@ public class IngestDecedent {
 		public String toString() {
 			return String.valueOf(value);
 		}
-
+		
+		@JsonCreator
 		public static GenderEnum fromValue(String text) {
 			for (GenderEnum b : GenderEnum.values()) {
 				if (String.valueOf(b.value).equals(text)) {
@@ -262,6 +271,7 @@ public class IngestDecedent {
 			this.value = value;
 		}
 
+		@JsonValue
 		public String getValue() {
 			return value;
 		}
@@ -271,6 +281,7 @@ public class IngestDecedent {
 			return String.valueOf(value);
 		}
 
+		@JsonCreator
 		public static MaritalStatusAtDeathEnum fromValue(String text) {
 			for (MaritalStatusAtDeathEnum b : MaritalStatusAtDeathEnum.values()) {
 				if (String.valueOf(b.value).equals(text)) {
@@ -328,6 +339,7 @@ public class IngestDecedent {
 			this.value = value;
 		}
 
+		@JsonValue
 		public String getValue() {
 			return value;
 		}
@@ -337,6 +349,7 @@ public class IngestDecedent {
 			return String.valueOf(value);
 		}
 
+		@JsonCreator
 		public static PlaceOfDeathTypeEnum fromValue(String text) {
 			for (PlaceOfDeathTypeEnum b : PlaceOfDeathTypeEnum.values()) {
 				if (String.valueOf(b.value).equals(text)) {
@@ -381,9 +394,9 @@ public class IngestDecedent {
 
 		ASSOCIATE_DEGREE("Associate Degree"),
 
-		BACHELOR_S_DEGREE("Bachelor's Degree"),
+		BACHELOR_DEGREE("Bachelor Degree"),
 
-		MASTER_S_DEGREE("Master's Degree"),
+		MASTER_DEGREE("Master Degree"),
 
 		DOCTORATE("Doctorate"),
 
@@ -395,6 +408,7 @@ public class IngestDecedent {
 			this.value = value;
 		}
 
+		@JsonValue
 		public String getValue() {
 			return value;
 		}
@@ -404,6 +418,7 @@ public class IngestDecedent {
 			return String.valueOf(value);
 		}
 
+		@JsonCreator
 		public static EducationEnum fromValue(String text) {
 			for (EducationEnum b : EducationEnum.values()) {
 				if (String.valueOf(b.value).equals(text)) {
