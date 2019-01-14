@@ -5,6 +5,7 @@ import java.text.ParseException;
 import java.util.Date;
 
 import ca.uhn.fhir.model.api.IDatatype;
+import ca.uhn.fhir.model.dstu2.composite.AddressDt;
 import ca.uhn.fhir.model.dstu2.composite.AgeDt;
 import ca.uhn.fhir.model.dstu2.composite.PeriodDt;
 import ca.uhn.fhir.model.dstu2.composite.RangeDt;
@@ -49,5 +50,35 @@ public class HAPIFHIRUtil {
 		} catch (ParseException e) {
 			return null;
 		}
+	}
+	
+	public static String addressToString(AddressDt address) {
+		String returnString = "";
+		for(StringDt line: address.getLine()) {
+			returnString.concat(line.getValue());
+			returnString.concat(" ");
+		}
+		returnString.concat(address.getCity());
+		returnString.concat(", ");
+		returnString.concat(address.getState());
+		returnString.concat(" ");
+		returnString.concat(address.getPostalCode());
+		return returnString;
+	}
+	
+	public static AddressDt stringToAddress(String string) {
+		AddressDt returnAddress = new AddressDt();
+		int lineEndIndex = string.indexOf(", ");
+		returnAddress.addLine(string.substring(0, lineEndIndex));
+		string = string.substring(lineEndIndex+2);
+		int stateEndIndex = string.indexOf(" ");
+		returnAddress.setState(string.substring(0,stateEndIndex));
+		string = string.substring(stateEndIndex+1);
+		returnAddress.setPostalCode(string); //End of formatted string
+		return returnAddress;
+	}
+	
+	public static String getIdFromFullURL(String URL) {
+		return URL.substring(URL.lastIndexOf('/') + 1);
 	}
 }
