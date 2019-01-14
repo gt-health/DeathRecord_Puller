@@ -2,13 +2,15 @@ package gatech.edu.nightingale.model;
 
 import org.hl7.fhir.dstu3.model.CodeableConcept;
 
+import ca.uhn.fhir.model.api.BaseIdentifiableElement;
+import ca.uhn.fhir.model.api.annotation.Block;
 import ca.uhn.fhir.model.api.annotation.Child;
 import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.model.api.annotation.Extension;
 import ca.uhn.fhir.model.api.annotation.ResourceDef;
 
-@ResourceDef(name = "Disposition", profile = "https://nightingaleproject.github.io/fhir-death-record/guide/StructureDefinition-sdr-decedent-Disposition-extension.html")
-public class Disposition {
+@Block()
+public class Disposition{
 	private static final long serialVersionUID = 1L;
 
 	@Child(name = "DispositionTypeExtension")

@@ -11,7 +11,7 @@ import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.model.api.annotation.Extension;
 import ca.uhn.fhir.model.api.annotation.ResourceDef;
 import ca.uhn.fhir.model.primitive.CodeDt;
-import ca.uhn.fhir.model.primitive.UnsignedIntDt;
+import ca.uhn.fhir.model.primitive.IntegerDt;
 
 @ResourceDef(name = "Decedent", profile = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-Decedent")
 public class Decedent extends Patient {
@@ -20,8 +20,6 @@ public class Decedent extends Patient {
 	@Child(name = "birthSex")
 	@Extension(url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "US Core BirthSex Extension")
-	// TODO: Add valueset
-	// http://hl7.org/fhir/us/core/1.0.1/ValueSet-us-core-birthsex.html
 	private CodeDt birthSex;
 	@Child(name = "enthnicity")
 	@Extension(url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity", definedLocally = true, isModifier = false)
@@ -36,7 +34,7 @@ public class Decedent extends Patient {
 	@Child(name = "AgeExtension")
 	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-Age-extension", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "SDR Age Extension")
-	private UnsignedIntDt ageExtension;
+	private IntegerDt ageExtension;
 	@Child(name = "BirthplaceExtension")
 	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-Birthplace-extension", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "SDR Birthplace Extension")
@@ -90,11 +88,11 @@ public class Decedent extends Patient {
 		this.race = race;
 	}
 
-	public UnsignedIntDt getAgeExtension() {
+	public IntegerDt getAgeExtension() {
 		return ageExtension;
 	}
 
-	public void setAgeExtension(UnsignedIntDt ageExtension) {
+	public void setAgeExtension(IntegerDt ageExtension) {
 		this.ageExtension = ageExtension;
 	}
 

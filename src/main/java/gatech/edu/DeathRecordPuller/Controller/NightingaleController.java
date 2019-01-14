@@ -16,11 +16,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.model.primitive.BooleanDt;
 import ca.uhn.fhir.model.primitive.CodeDt;
 import ca.uhn.fhir.model.primitive.IdDt;
+import ca.uhn.fhir.model.primitive.IntegerDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.model.primitive.UnsignedIntDt;
+import ca.uhn.fhir.parser.IParser;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestAddress;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestDeathRecord;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestDecedent;
@@ -48,7 +51,7 @@ public class NightingaleController {
 	private static final String nullFlavorSystem = "http://hl7.org/fhir/v3/NullFlavor";
 	CertifierTypeValueSet certificerTypeValueSet;
 	ContributoryTobaccoUseValueSet contributoryTobaccoUseValueSet;
-	DispositionValueSet dispositionTypeValueSet;
+	DispositionValueSet dispositionValueSet;
 	EducationValueSet educationValueSet;
 	IDTypeValueSet iDTypeValueSet;
 	MannerOfDeathValueSet mannerOfDeathValueSet;
@@ -56,22 +59,33 @@ public class NightingaleController {
 	PregnancyStatusValueSet pregnancyStatusValueSet;
 	TransportRelationshipsValueSet transportRelationshipsValueSet;
 	
+	private IParser jsonParserDstu3;
 	public NightingaleController() {
+		certificerTypeValueSet = new CertifierTypeValueSet();
 		certificerTypeValueSet.init();
+		contributoryTobaccoUseValueSet = new ContributoryTobaccoUseValueSet();
 		contributoryTobaccoUseValueSet.init();
-		dispositionTypeValueSet.init();
+		dispositionValueSet = new DispositionValueSet();
+		dispositionValueSet.init();
+		educationValueSet = new EducationValueSet();
 		educationValueSet.init();
+		iDTypeValueSet = new IDTypeValueSet();
 		iDTypeValueSet.init();
+		mannerOfDeathValueSet = new MannerOfDeathValueSet();
 		mannerOfDeathValueSet.init();
+		placeOfDeathTypeValueSet = new PlaceOfDeathTypeValueSet();
 		placeOfDeathTypeValueSet.init();
+		pregnancyStatusValueSet = new PregnancyStatusValueSet();
 		pregnancyStatusValueSet.init();
+		transportRelationshipsValueSet = new TransportRelationshipsValueSet();
 		transportRelationshipsValueSet.init();
+		this.jsonParserDstu3 = FhirContext.forDstu3().newJsonParser().setPrettyPrint(true);
 	}
 	
-	@RequestMapping(value = "/testEDRS", method = RequestMethod.POST, consumes = "application/json", produces = "application/json+fhir")
-	public ResponseEntity<DeathRecord> testEDRS(@RequestBody() IngestDeathRecord input){
+	@RequestMapping(value = "/testEDRS", method = RequestMethod.POST, consumes = "application/json")
+	public ResponseEntity<String> testEDRS(@RequestBody() IngestDeathRecord input){
 		DeathRecord output = convertIngestDeathRecordToNightingale(input);
-		return new ResponseEntity<DeathRecord>(output,HttpStatus.OK);
+		return new ResponseEntity<String>(jsonParserDstu3.encodeResourceToString(output),HttpStatus.OK);
 	}
 	
 	public DeathRecord convertIngestDeathRecordToNightingale(IngestDeathRecord input) {
@@ -97,13 +111,13 @@ public class NightingaleController {
 			if(relationship.getType().equals(TypeEnum.INFORMANT)) {
 				relationshipValue = "CP";
 			}
-			contact.addRelationship().addCoding(new Coding(relationshipValue,"http://hl7.org/fhir/v2/0131",""))
+			contact.addRelationship().addCoding(new Coding(relationshipValue,"http://hl7.org/fhir/v2/0131",""));
 			output.addContact(contact);
 		}
 		output.setBirthSex(new CodeDt(inputDecedent.getBirthsex().getValue()));
 		//output.setEthnicity(input.getEthnicity()); TODO: Handle Ethnicity us-core correctly
 		//output.setRace(input.getRace()); TODO: Handle Race us-core correctly
-		output.setAgeExtension(new UnsignedIntDt(inputDecedent.getAge()));
+		output.setAgeExtension(new IntegerDt(inputDecedent.getAge()));
 		output.setBirthplaceExtension(convertIngestAddressToNightingale(inputDecedent.getBirthplace()));
 		output.setServedInArmedForcesExtension(new BooleanType(inputDecedent.isServedInArmedForces()));
 		String martialStatusCodeSystem = "http://hl7.org/fhir/v3/MaritalStatus";
@@ -119,7 +133,7 @@ public class NightingaleController {
 		output.setPlaceOfDeathExtension(placeOfDeath);
 		
 		Disposition disposition = new Disposition();
-		disposition.setDispositionTypeExtension(dispositionTypeValueSet.get(inputDecedent.getDisposition().getType().getValue()));
+		disposition.setDispositionTypeExtension(dispositionValueSet.get(inputDecedent.getDisposition().getType().getValue()));
 		//TODO: Add FacilitName and PostalAddress Extension Correctly
 		//disposition.setDispositionFacilityExtension(dispositionFacilityExtension);
 		//output.setDis
@@ -133,7 +147,7 @@ public class NightingaleController {
 	
 	public PostalAddress convertIngestAddressToNightingale(IngestAddress inputAddress) {
 		PostalAddress output = new PostalAddress();
-		output.setType(AddressType.valueOf(inputAddress.getType().getValue()));
+		output.setType(AddressType.valueOf(inputAddress.getType().getValue().toUpperCase()));
 		output.setText(inputAddress.getText());
 		for(String line : inputAddress.getLine()) {
 			output.addLine(line);
