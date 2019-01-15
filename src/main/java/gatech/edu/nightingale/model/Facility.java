@@ -1,15 +1,21 @@
 package gatech.edu.nightingale.model;
 
+import java.util.List;
+
 import org.hl7.fhir.dstu3.model.StringType;
 
+import ca.uhn.fhir.model.api.BaseIdentifiableElement;
+import ca.uhn.fhir.model.api.IElement;
+import ca.uhn.fhir.model.api.IExtension;
 import ca.uhn.fhir.model.api.annotation.Block;
 import ca.uhn.fhir.model.api.annotation.Child;
 import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.model.api.annotation.Extension;
 import ca.uhn.fhir.model.api.annotation.ResourceDef;
+import ca.uhn.fhir.util.ElementUtil;
 
 @Block()
-public class Facility {
+public class Facility extends BaseIdentifiableElement implements IExtension {
 	private static final long serialVersionUID = 1L;
 
 	@Child(name = "FacilityNameExtension")
@@ -35,6 +41,18 @@ public class Facility {
 
 	public void setPostalAddressExtension(PostalAddress postalAddressExtension) {
 		this.postalAddressExtension = postalAddressExtension;
+	}
+
+	@Override
+	public <T extends IElement> List<T> getAllPopulatedChildElementsOfType(Class<T> theType) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		// TODO Auto-generated method stub
+		return ElementUtil.isEmpty(facilityNameExtension,postalAddressExtension);
 	}
 
 }

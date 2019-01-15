@@ -3,15 +3,15 @@ package gatech.edu.nightingale.model;
 import org.hl7.fhir.dstu3.model.Address;
 import org.hl7.fhir.dstu3.model.BooleanType;
 import org.hl7.fhir.dstu3.model.CodeableConcept;
+import org.hl7.fhir.dstu3.model.CodeType;
 import org.hl7.fhir.dstu3.model.Coding;
 import org.hl7.fhir.dstu3.model.Patient;
+import org.hl7.fhir.dstu3.model.UnsignedIntType;
 
 import ca.uhn.fhir.model.api.annotation.Child;
 import ca.uhn.fhir.model.api.annotation.Description;
 import ca.uhn.fhir.model.api.annotation.Extension;
 import ca.uhn.fhir.model.api.annotation.ResourceDef;
-import ca.uhn.fhir.model.primitive.CodeDt;
-import ca.uhn.fhir.model.primitive.IntegerDt;
 
 @ResourceDef(name = "Decedent", profile = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-Decedent")
 public class Decedent extends Patient {
@@ -20,7 +20,7 @@ public class Decedent extends Patient {
 	@Child(name = "birthSex")
 	@Extension(url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "US Core BirthSex Extension")
-	private CodeDt birthSex;
+	private CodeType birthSex;
 	@Child(name = "enthnicity")
 	@Extension(url = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "US Core Ethnicity Extension")
@@ -34,7 +34,7 @@ public class Decedent extends Patient {
 	@Child(name = "AgeExtension")
 	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-Age-extension", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "SDR Age Extension")
-	private IntegerDt ageExtension;
+	private UnsignedIntType ageExtension;
 	@Child(name = "BirthplaceExtension")
 	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-Birthplace-extension", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "SDR Birthplace Extension")
@@ -44,7 +44,7 @@ public class Decedent extends Patient {
 	@Description(shortDefinition = "SDR ServedInArmedForces Extension")
 	private BooleanType servedInArmedForcesExtension;
 	@Child(name = "MaritalStatusAtDeathExtension")
-	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-ServedInArmedForces-extension", definedLocally = true, isModifier = false)
+	@Extension(url = "http://nightingaleproject.github.io/fhirDeathRecord/StructureDefinition/sdr-decedent-MaritalStatusAtDeath-extension", definedLocally = true, isModifier = false)
 	@Description(shortDefinition = "SDR MaritalStatusAtDeath Extension")
 	private CodeableConcept maritalStatusAtDeathExtension;
 	@Child(name = "PlaceOfDeathExtension")
@@ -64,11 +64,11 @@ public class Decedent extends Patient {
 		super();
 	}
 
-	public CodeDt getBirthSex() {
+	public CodeType getBirthSex() {
 		return birthSex;
 	}
 
-	public void setBirthSex(CodeDt birthSex) {
+	public void setBirthSex(CodeType birthSex) {
 		this.birthSex = birthSex;
 	}
 
@@ -88,11 +88,11 @@ public class Decedent extends Patient {
 		this.race = race;
 	}
 
-	public IntegerDt getAgeExtension() {
+	public UnsignedIntType getAgeExtension() {
 		return ageExtension;
 	}
 
-	public void setAgeExtension(IntegerDt ageExtension) {
+	public void setAgeExtension(UnsignedIntType ageExtension) {
 		this.ageExtension = ageExtension;
 	}
 

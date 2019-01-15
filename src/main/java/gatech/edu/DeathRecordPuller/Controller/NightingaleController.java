@@ -2,12 +2,18 @@ package gatech.edu.DeathRecordPuller.Controller;
 
 import org.hl7.fhir.dstu3.model.Address.AddressType;
 import org.hl7.fhir.dstu3.model.BooleanType;
+import org.hl7.fhir.dstu3.model.Bundle;
 import org.hl7.fhir.dstu3.model.Bundle.BundleEntryComponent;
+import org.hl7.fhir.dstu3.model.Bundle.BundleType;
+import org.hl7.fhir.dstu3.model.CodeType;
 import org.hl7.fhir.dstu3.model.CodeableConcept;
 import org.hl7.fhir.dstu3.model.Coding;
 import org.hl7.fhir.dstu3.model.Contract;
 import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Patient.ContactComponent;
+import org.hl7.fhir.dstu3.model.StringType;
+import org.hl7.fhir.dstu3.model.UnsignedIntType;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -30,9 +36,10 @@ import gatech.edu.DeathRecordPuller.EDRS.model.IngestDecedent;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestDecedent.MaritalStatusAtDeathEnum;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestRelatedPerson;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestRelatedPerson.TypeEnum;
-import gatech.edu.nightingale.model.DeathRecord;
+import gatech.edu.DeathRecordPuller.nightingale.service.NightingaleService;
 import gatech.edu.nightingale.model.Decedent;
 import gatech.edu.nightingale.model.Disposition;
+import gatech.edu.nightingale.model.Facility;
 import gatech.edu.nightingale.model.PlaceOfDeath;
 import gatech.edu.nightingale.model.PostalAddress;
 import gatech.edu.nightingale.model.valuesets.CertifierTypeValueSet;
@@ -48,19 +55,24 @@ import gatech.edu.nightingale.model.valuesets.TransportRelationshipsValueSet;
 @CrossOrigin()
 @RestController
 public class NightingaleController {
-	private static final String nullFlavorSystem = "http://hl7.org/fhir/v3/NullFlavor";
-	CertifierTypeValueSet certificerTypeValueSet;
-	ContributoryTobaccoUseValueSet contributoryTobaccoUseValueSet;
-	DispositionValueSet dispositionValueSet;
-	EducationValueSet educationValueSet;
-	IDTypeValueSet iDTypeValueSet;
-	MannerOfDeathValueSet mannerOfDeathValueSet;
-	PlaceOfDeathTypeValueSet placeOfDeathTypeValueSet;
-	PregnancyStatusValueSet pregnancyStatusValueSet;
-	TransportRelationshipsValueSet transportRelationshipsValueSet;
+	protected static final String nullFlavorSystem = "http://hl7.org/fhir/v3/NullFlavor";
 	
-	private IParser jsonParserDstu3;
-	public NightingaleController() {
+	protected NightingaleService nightingaleService;
+	
+	protected CertifierTypeValueSet certificerTypeValueSet;
+	protected ContributoryTobaccoUseValueSet contributoryTobaccoUseValueSet;
+	protected DispositionValueSet dispositionValueSet;
+	protected EducationValueSet educationValueSet;
+	protected IDTypeValueSet iDTypeValueSet;
+	protected MannerOfDeathValueSet mannerOfDeathValueSet;
+	protected PlaceOfDeathTypeValueSet placeOfDeathTypeValueSet;
+	protected PregnancyStatusValueSet pregnancyStatusValueSet;
+	protected TransportRelationshipsValueSet transportRelationshipsValueSet;
+	
+	protected  IParser jsonParserDstu3;
+	@Autowired()
+	public NightingaleController(NightingaleService nightingaleService) {
+		this.nightingaleService = nightingaleService;
 		certificerTypeValueSet = new CertifierTypeValueSet();
 		certificerTypeValueSet.init();
 		contributoryTobaccoUseValueSet = new ContributoryTobaccoUseValueSet();
@@ -82,14 +94,22 @@ public class NightingaleController {
 		this.jsonParserDstu3 = FhirContext.forDstu3().newJsonParser().setPrettyPrint(true);
 	}
 	
+	@RequestMapping(value = "/EDRS", method = RequestMethod.POST, consumes = "application/json")
+	public ResponseEntity<String> EDRS(@RequestBody() IngestDeathRecord input){
+		Bundle deathRecord = convertIngestDeathRecordToNightingale(input);
+		String deathRecordJson = jsonParserDstu3.encodeResourceToString(deathRecord);
+		nightingaleService.submitEDRS(deathRecordJson);
+		return new ResponseEntity<String>(deathRecordJson,HttpStatus.OK);
+	}
 	@RequestMapping(value = "/testEDRS", method = RequestMethod.POST, consumes = "application/json")
 	public ResponseEntity<String> testEDRS(@RequestBody() IngestDeathRecord input){
-		DeathRecord output = convertIngestDeathRecordToNightingale(input);
+		Bundle output = convertIngestDeathRecordToNightingale(input);
 		return new ResponseEntity<String>(jsonParserDstu3.encodeResourceToString(output),HttpStatus.OK);
 	}
 	
-	public DeathRecord convertIngestDeathRecordToNightingale(IngestDeathRecord input) {
-		DeathRecord output = new DeathRecord();
+	public Bundle convertIngestDeathRecordToNightingale(IngestDeathRecord input) {
+		Bundle output = new Bundle();
+		output.setType(BundleType.DOCUMENT);
 		Decedent decedent = convertIngestDecedentRecordToNightingale(input.getDecedent());
 		BundleEntryComponent decedentEntry = new BundleEntryComponent();
 		decedentEntry.setResource(decedent);
@@ -104,7 +124,6 @@ public class NightingaleController {
 		identifier.setType(iDTypeValueSet.get(inputDecedent.getIdtype().getValue()));
 		PostalAddress decedentAddress = convertIngestAddressToNightingale(inputDecedent.getAddress());
 		output.getAddress().add(decedentAddress);
-		
 		for(IngestRelatedPerson relationship:inputDecedent.getRelations()) {
 			ContactComponent contact = new ContactComponent();
 			String relationshipValue = "N";
@@ -114,10 +133,10 @@ public class NightingaleController {
 			contact.addRelationship().addCoding(new Coding(relationshipValue,"http://hl7.org/fhir/v2/0131",""));
 			output.addContact(contact);
 		}
-		output.setBirthSex(new CodeDt(inputDecedent.getBirthsex().getValue()));
+		output.setBirthSex(new CodeType(inputDecedent.getBirthsex().getValue()));
 		//output.setEthnicity(input.getEthnicity()); TODO: Handle Ethnicity us-core correctly
 		//output.setRace(input.getRace()); TODO: Handle Race us-core correctly
-		output.setAgeExtension(new IntegerDt(inputDecedent.getAge()));
+		output.setAgeExtension(new UnsignedIntType(inputDecedent.getAge()));
 		output.setBirthplaceExtension(convertIngestAddressToNightingale(inputDecedent.getBirthplace()));
 		output.setServedInArmedForcesExtension(new BooleanType(inputDecedent.isServedInArmedForces()));
 		String martialStatusCodeSystem = "http://hl7.org/fhir/v3/MaritalStatus";
@@ -128,16 +147,20 @@ public class NightingaleController {
 		
 		PlaceOfDeath placeOfDeath = new PlaceOfDeath();
 		placeOfDeath.setPlaceOfDeathTypeExtension(placeOfDeathTypeValueSet.get(inputDecedent.getPlaceOfDeathType().getValue()));
-		placeOfDeath.setFacilityNameExtension(new StringDt(inputDecedent.getPlaceOfDeath().getText()));
+		placeOfDeath.setFacilityNameExtension(new StringType(inputDecedent.getPlaceOfDeath().getText()));
 		placeOfDeath.setPostalAddressExtension(convertIngestAddressToNightingale(inputDecedent.getPlaceOfDeath()));
 		output.setPlaceOfDeathExtension(placeOfDeath);
 		
 		Disposition disposition = new Disposition();
 		disposition.setDispositionTypeExtension(dispositionValueSet.get(inputDecedent.getDisposition().getType().getValue()));
-		//TODO: Add FacilitName and PostalAddress Extension Correctly
-		//disposition.setDispositionFacilityExtension(dispositionFacilityExtension);
-		//output.setDis
-		output.setDispositionExtension(disposition);
+		Facility dispositionFacility = new Facility();
+		dispositionFacility.setFacilityNameExtension(new StringType(inputDecedent.getDisposition().getDispositionFacility().getName()));
+		dispositionFacility.setPostalAddressExtension(convertIngestAddressToNightingale(inputDecedent.getDisposition().getDispositionFacility().getLocation()));
+		disposition.setDispositionFacilityExtension(dispositionFacility);
+		Facility funeralFacility = new Facility();
+		funeralFacility.setFacilityNameExtension(new StringType(inputDecedent.getDisposition().getFuneralFacility().getName()));
+		funeralFacility.setPostalAddressExtension(convertIngestAddressToNightingale(inputDecedent.getDisposition().getFuneralFacility().getLocation()));
+		disposition.setFuneralFacilityExtension(dispositionFacility);
 		
 		output.setEducationExtension(educationValueSet.get(inputDecedent.getEducation().getValue()));
 		//TODO: Add Occupation information to model
@@ -157,7 +180,7 @@ public class NightingaleController {
 		output.setState(inputAddress.getState());
 		output.setPostalCode(inputAddress.getPostalCode());
 		output.setCountry(inputAddress.getCountry());
-		output.setInsideCityLimits(new BooleanDt(inputAddress.getInsideCityLimits()));
+		output.setInsideCityLimits(new BooleanType(inputAddress.getInsideCityLimits()));
 		return output;
 	}
 }
