@@ -1,6 +1,9 @@
 package gatech.edu.DeathRecordPuller.Controller;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.hl7.fhir.dstu3.hapi.ctx.FhirDstu3;
@@ -9,7 +12,10 @@ import org.hl7.fhir.dstu3.model.Bundle.BundleEntryComponent;
 import org.hl7.fhir.dstu3.model.CapabilityStatement;
 import org.hl7.fhir.dstu3.model.CapabilityStatement.CapabilityStatementRestComponent;
 import org.hl7.fhir.dstu3.model.CapabilityStatement.CapabilityStatementRestOperationComponent;
+import org.hl7.fhir.instance.model.api.IBaseBundle;
 import org.hl7.fhir.dstu3.model.IdType;
+import org.hl7.fhir.dstu3.model.MedicationRequest;
+import org.hl7.fhir.dstu3.model.MedicationStatement;
 import org.hl7.fhir.dstu3.model.Parameters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,10 +42,16 @@ import ca.uhn.fhir.model.dstu2.FhirDstu2;
 import ca.uhn.fhir.model.dstu2.resource.Bundle.Entry;
 import ca.uhn.fhir.model.dstu2.resource.Conformance;
 import ca.uhn.fhir.model.dstu2.resource.Conformance.RestOperation;
+import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResource;
+import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResourceInteraction;
+import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResourceSearchParam;
+import ca.uhn.fhir.model.dstu2.resource.MedicationOrder;
 import ca.uhn.fhir.model.primitive.IdDt;
+import ca.uhn.fhir.parser.DataFormatException;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.IFetchConformanceUntyped;
+import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import gatech.edu.DeathRecordPuller.Controller.config.PatientEverythingConfig;
 import gatech.edu.common.FHIR.client.ClientService;
 
@@ -81,17 +93,21 @@ public class PatientEverythingController {
 	}
 	
 	@RequestMapping(value = "/Patient/{id}/$everything", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<String> getPatientEverything(@PathVariable long id) throws JsonProcessingException{
+	public ResponseEntity<String> getPatientEverything(@PathVariable String id) throws JsonProcessingException{
 		ca.uhn.fhir.model.dstu2.resource.Bundle returnBundleDstu2 = new ca.uhn.fhir.model.dstu2.resource.Bundle();
 		Bundle returnBundleStu3 = new Bundle();
 		for(IGenericClient endpoint: fhirServers) {
 			IFhirVersion version = endpoint.getFhirContext().getVersion();
 			if(version instanceof FhirDstu2) {
+				ca.uhn.fhir.model.dstu2.resource.Bundle newEntries = new ca.uhn.fhir.model.dstu2.resource.Bundle(); 
 				if(serverSupportsOperationDstu2(endpoint,"everything")) {
-					ca.uhn.fhir.model.dstu2.resource.Bundle newEntries = getEverythingDstu2(endpoint,id);
-					for(Entry newEntry : newEntries.getEntry()) {
-						returnBundleDstu2.addEntry(newEntry);
-					}
+					newEntries = getEverythingDstu2(endpoint,id);
+				}
+				else {
+					newEntries = manuallyGetEverythingDstu2(endpoint,id);
+				}
+				for(Entry newEntry : newEntries.getEntry()) {
+					returnBundleDstu2.addEntry(newEntry);
 				}
 			}
 			else if(version instanceof FhirDstu3) {
@@ -103,14 +119,21 @@ public class PatientEverythingController {
 				}
 			}
 		}
-		ObjectNode finalMap = JsonNodeFactory.instance.objectNode();
-		finalMap.put("dstu2", jsonParser2.encodeResourceToString(returnBundleDstu2));
-		finalMap.put("stu3", jsonParser3.encodeResourceToString(returnBundleStu3));
-		return new ResponseEntity<String>(mapper.writeValueAsString(finalMap), HttpStatus.OK);
+		Bundle convertedBundle = convertDstu2BundleToStu3Bundle(returnBundleDstu2);
+		for(BundleEntryComponent newEntry : convertedBundle.getEntry()) {
+			returnBundleStu3.addEntry(newEntry);
+		}
+		return new ResponseEntity<String>(jsonParser3.encodeResourceToString(returnBundleStu3), HttpStatus.OK);
 	}
 	
 	public boolean serverSupportsOperationDstu2(IGenericClient client,String name) {
-		Conformance conformance = client.capabilities().ofType(Conformance.class).execute();
+		Conformance conformance = null;
+		try {
+		conformance = client.capabilities().ofType(Conformance.class).execute();
+		}
+		catch(InternalErrorException e) {
+			return false;
+		}
 		for(Conformance.Rest restComponent:conformance.getRest()) {
 			for(RestOperation operation:restComponent.getOperation()) {
 				if(operation.getName().equals("everything"))
@@ -120,9 +143,9 @@ public class PatientEverythingController {
 		return false;
 	}
 	
-	public ca.uhn.fhir.model.dstu2.resource.Bundle getEverythingDstu2(IGenericClient client,long patientId) {
+	public ca.uhn.fhir.model.dstu2.resource.Bundle getEverythingDstu2(IGenericClient client,String patientId) {
 		ca.uhn.fhir.model.dstu2.resource.Parameters outParams = client.operation()
-		.onInstance(new IdType("Patient",new Long(patientId)))
+		.onInstance(new IdType("Patient",patientId))
 		.named("$everything")
 		.withParameters(new ca.uhn.fhir.model.dstu2.resource.Parameters())
 		.execute();
@@ -130,8 +153,57 @@ public class PatientEverythingController {
 		return (ca.uhn.fhir.model.dstu2.resource.Bundle) outParams.getParameterFirstRep().getResource();
 	}
 	
+	public ca.uhn.fhir.model.dstu2.resource.Bundle manuallyGetEverythingDstu2(IGenericClient client,String patientId) {
+		ca.uhn.fhir.model.dstu2.resource.Bundle returnBundle = new ca.uhn.fhir.model.dstu2.resource.Bundle(); 
+		Conformance conformance = null;
+		try {
+		conformance = client.capabilities().ofType(Conformance.class).execute();
+		}
+		catch(InternalErrorException e) {
+			return new ca.uhn.fhir.model.dstu2.resource.Bundle();
+		}
+		for(Conformance.Rest restComponent:conformance.getRest()) {
+			for(RestResource restResource:restComponent.getResource()) {
+				String resourceType = restResource.getType();
+				for(RestResourceInteraction restResourceInteration:restResource.getInteraction()) {
+					if(restResourceInteration.getCode().equalsIgnoreCase("read")) {
+						for(RestResourceSearchParam searchParam:restResource.getSearchParam()) {
+							if(searchParam.getName().equalsIgnoreCase("patient") && 
+									(searchParam.getType().equalsIgnoreCase("reference") || searchParam.getType().equalsIgnoreCase("string"))){
+								String searchUrl = restResource.getType() + "?patient="+patientId;
+								ca.uhn.fhir.model.dstu2.resource.Bundle tempBundle = client.search()
+								.byUrl(searchUrl)
+								.returnBundle(ca.uhn.fhir.model.dstu2.resource.Bundle.class)
+								.execute();
+								while(tempBundle != null) {
+									for(Entry newEntry : tempBundle.getEntry()) {
+										returnBundle.addEntry(newEntry);
+									}
+									tempBundle = null;
+									/*if(tempBundle.getLink(IBaseBundle.LINK_NEXT) != null) {
+										tempBundle = client.loadPage().next(tempBundle).execute();
+									}
+									else {
+										tempBundle = null;
+									}*/
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return returnBundle;
+	}
+	
 	public boolean serverSupportsOperationDstu3(IGenericClient client,String name) {
-		CapabilityStatement capabilities = client.capabilities().ofType(CapabilityStatement.class).execute();
+		CapabilityStatement capabilities = null;
+		try {
+		capabilities = client.capabilities().ofType(CapabilityStatement.class).execute();
+		}
+		catch(InternalErrorException e) {
+			return false;
+		}
 		for(CapabilityStatementRestComponent restComponent:capabilities.getRest()) {
 			if(restComponent.hasOperation()) {
 				for(CapabilityStatementRestOperationComponent operComponent:restComponent.getOperation()) {
@@ -143,14 +215,55 @@ public class PatientEverythingController {
 		return false;
 	}
 	
-	public Bundle getEverythingDstu3(IGenericClient client,long patientId) {
-		Parameters outParams = client.operation()
-		.onInstance(new IdType("Patient",new Long(patientId)))
-		.named("$everything")
-		.withParameters(new Parameters())
-		.useHttpGet()
-		.execute();
-		
+	public Bundle getEverythingDstu3(IGenericClient client,String patientId) {
+		Parameters outParams = null;
+		try {
+			outParams = client.operation()
+			.onInstance(new IdType("Patient",patientId))
+			.named("$everything")
+			.withParameters(new Parameters())
+			.useHttpGet()
+			.execute();
+		}
+		catch(InternalErrorException e) {
+			return new Bundle();
+		}
 		return (Bundle) outParams.getParameterFirstRep().getResource();
+	}
+	
+	public Bundle convertDstu2BundleToStu3Bundle(ca.uhn.fhir.model.dstu2.resource.Bundle dstu2Bundle) {
+		Bundle stu3Bundle = new Bundle();
+		for(Iterator<Entry> iterator = dstu2Bundle.getEntry().iterator(); iterator.hasNext();) {
+			Entry entry = iterator.next();
+			if(entry.getResource() instanceof MedicationOrder) {
+				MedicationRequest medicationReq = medicationOrderToMedicationRequest((MedicationOrder)entry.getResource());
+				stu3Bundle.addEntry(new BundleEntryComponent().setResource(medicationReq));
+				iterator.remove();
+			}
+		}
+		String dstu2String = jsonParser2.encodeResourceToString(dstu2Bundle);
+		Bundle lintedBundle = (Bundle) jsonParser3.parseResource(new StringReader(dstu2String));
+		for(BundleEntryComponent bundleEntryComponent:lintedBundle.getEntry()) {
+			stu3Bundle.addEntry(bundleEntryComponent);
+		}
+		return stu3Bundle;
+	}
+	
+	public MedicationRequest medicationOrderToMedicationRequest(MedicationOrder medicationOrder) {
+		ObjectNode jsonObject;
+		try {
+			jsonObject = (ObjectNode)mapper.readTree(jsonParser2.encodeResourceToString(medicationOrder));
+			jsonObject.put("resourceType", "MedicationRequest");
+			jsonObject.remove("dateWritten");
+			jsonObject.put("subject", jsonObject.get("patient"));
+			jsonObject.remove("patient");
+			jsonObject.put("performer", jsonObject.get("prescriber"));
+			jsonObject.remove("prescriber");
+			MedicationRequest output = jsonParser3.parseResource(MedicationRequest.class,new StringReader(mapper.writeValueAsString(jsonObject.asText())));
+			return output;
+		}
+		catch (Exception e) {
+			return new MedicationRequest();
+		}
 	}
 }
