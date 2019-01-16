@@ -1,6 +1,6 @@
 [submodule "ecr_javalib"]
 	path = ecr_javalib
-	url = https://git2.icl.gtri.org/scm/cdcsti/ecr_javalib.git
+	url = https://git@git2.icl.gtri.org/scm/cdcsti/ecr_javalib.git
 [submodule "crontab-utilities"]
 	path = crontab-utilities
-	url = https://git2.icl.gtri.org/scm/cdcsti/crontab-utilities.git
+	url = https://git@git2.icl.gtri.org/scm/cdcsti/crontab-utilities.git
