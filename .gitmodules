@@ -3,4 +3,4 @@
 	url = ssh://git@git2.icl.gtri.org:8022/cdcsti/ecr_javalib.git
 [submodule "crontab-utilities"]
 	path = crontab-utilities
-	url = ssh://git@git2.icl.gtri.org:8022/scm/cdcsti/crontab-utilities.git
+	url = ssh://git@git2.icl.gtri.org:8022/cdcsti/crontab-utilities.git
