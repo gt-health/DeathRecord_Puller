@@ -46,12 +46,14 @@ import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResource;
 import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResourceInteraction;
 import ca.uhn.fhir.model.dstu2.resource.Conformance.RestResourceSearchParam;
 import ca.uhn.fhir.model.dstu2.resource.MedicationOrder;
+import ca.uhn.fhir.model.dstu2.resource.Patient;
 import ca.uhn.fhir.model.primitive.IdDt;
 import ca.uhn.fhir.parser.DataFormatException;
 import ca.uhn.fhir.parser.IParser;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.gclient.IFetchConformanceUntyped;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
+import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import gatech.edu.DeathRecordPuller.Controller.config.PatientEverythingConfig;
 import gatech.edu.common.FHIR.client.ClientService;
 
@@ -154,7 +156,17 @@ public class PatientEverythingController {
 	}
 	
 	public ca.uhn.fhir.model.dstu2.resource.Bundle manuallyGetEverythingDstu2(IGenericClient client,String patientId) {
-		ca.uhn.fhir.model.dstu2.resource.Bundle returnBundle = new ca.uhn.fhir.model.dstu2.resource.Bundle(); 
+		ca.uhn.fhir.model.dstu2.resource.Bundle returnBundle = new ca.uhn.fhir.model.dstu2.resource.Bundle();
+		try {
+		Patient patient = client.read()
+				.resource(Patient.class)
+				.withId(new IdType(patientId))
+				.execute();
+		returnBundle.addEntry(new Entry().setResource(patient));
+		}
+		catch(ResourceNotFoundException e) {
+			return returnBundle;
+		}
 		Conformance conformance = null;
 		try {
 		conformance = client.capabilities().ofType(Conformance.class).execute();
