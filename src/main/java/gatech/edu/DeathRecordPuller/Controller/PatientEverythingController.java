@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.http.protocol.HTTP;
 import org.hl7.fhir.dstu3.hapi.ctx.FhirDstu3;
 import org.hl7.fhir.dstu3.model.Bundle;
 import org.hl7.fhir.dstu3.model.Bundle.BundleEntryComponent;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -137,11 +139,16 @@ public class PatientEverythingController {
 		return new ResponseEntity<String>(jsonParser3.encodeResourceToString(returnBundleStu3), HttpStatus.OK);
 	}
 	
-	@RequestMapping(value = "/Patient/{id}/$everything", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<String> getPatientEverythingIdServiceEnabled(@PathVariable String id) throws JsonProcessingException{
+	@RequestMapping(value = "/Patient/Search", method = RequestMethod.GET, produces = "application/json")
+	public ResponseEntity<String> getPatientEverythingIdServiceEnabled(@RequestParam(name= "case-number") String caseNumber,
+			@RequestParam String name,@RequestParam String family,@RequestParam String given) throws JsonProcessingException{
+		//Check for params
+		if(name.isEmpty() && (family.isEmpty() && name.isEmpty()) && caseNumber.isEmpty()) {
+			return new ResponseEntity<String>("No Params specified please use at least one of these parameters: [case-number,name,family.given]",HttpStatus.BAD_REQUEST);
+		}
 		ca.uhn.fhir.model.dstu2.resource.Bundle returnBundleDstu2 = new ca.uhn.fhir.model.dstu2.resource.Bundle();
 		Bundle returnBundleStu3 = new Bundle();
-		IDEntry idEntry = idService.getIDEntry(Integer.valueOf(id));
+		IDEntry idEntry = idService.getIDEntry(caseNumber,name,family,given);
 		for(IGenericClient endpoint: fhirServers) {
 			FHIRSource fhirSource = idEntry.getFhirSource(endpoint.getServerBase());
 			if(fhirSource != null) {

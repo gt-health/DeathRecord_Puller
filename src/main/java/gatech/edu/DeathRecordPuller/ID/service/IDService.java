@@ -1,5 +1,8 @@
 package gatech.edu.DeathRecordPuller.ID.service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -24,9 +27,22 @@ public class IDService {
 		restTemplate = new RestTemplate();
 	}
 	
-	public IDEntry getIDEntry(Integer id) {
-		UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(idServiceURL).path("manage/").path(id.toString()).build();
-		IDEntry output = restTemplate.getForEntity(uriComponents.toUri(), IDEntry.class).getBody();
+	public IDEntry getIDEntry(String caseNumber,String name,String family,String given){
+		UriComponents uriComponents = UriComponentsBuilder.fromHttpUrl(idServiceURL).path("search/").build();
+		Map<String,String> params = new HashMap<String,String>();
+		if(!caseNumber.isEmpty()) {
+			params.put("case-number", caseNumber);
+		}
+		if(!family.isEmpty()) {
+			params.put("family", family);
+		}
+		if(!given.isEmpty()) {
+			params.put("given", given);
+		}
+		if(!name.isEmpty()) {
+			params.put("name", name);
+		}
+		IDEntry output = restTemplate.getForEntity(uriComponents.toUri().toString(), IDEntry.class,params).getBody();
 		return output;
 	}
 }
