@@ -55,6 +55,9 @@ import ca.uhn.fhir.rest.gclient.IFetchConformanceUntyped;
 import ca.uhn.fhir.rest.server.exceptions.InternalErrorException;
 import ca.uhn.fhir.rest.server.exceptions.ResourceNotFoundException;
 import gatech.edu.DeathRecordPuller.Controller.config.PatientEverythingConfig;
+import gatech.edu.DeathRecordPuller.ID.model.FHIRSource;
+import gatech.edu.DeathRecordPuller.ID.model.IDEntry;
+import gatech.edu.DeathRecordPuller.ID.service.IDService;
 import gatech.edu.common.FHIR.client.ClientService;
 
 @CrossOrigin()
@@ -67,7 +70,8 @@ public class PatientEverythingController {
 	protected IParser jsonParser2;
 	protected IParser jsonParser3;
 	protected ObjectMapper mapper;
-	
+	@Autowired
+	protected IDService idService;
 	@Autowired
 	public PatientEverythingController(PatientEverythingConfig config) {
 		mapper = new ObjectMapper();
@@ -93,8 +97,13 @@ public class PatientEverythingController {
 			fhirServers.add(ctx.getRestfulClientFactory().newGenericClient(serverName));
 		}
 	}
-	
-	@RequestMapping(value = "/Patient/{id}/$everything", method = RequestMethod.GET, produces = "application/json")
+	/**
+	 * Old version of get everything, using the same id for each endpoint
+	 * @param id
+	 * @return
+	 * @throws JsonProcessingException
+	 */
+	@RequestMapping(value = "/Patient/{id}/$everything", method = RequestMethod.GET, produces = "application/json", headers= "IdMapping=false")
 	public ResponseEntity<String> getPatientEverything(@PathVariable String id) throws JsonProcessingException{
 		ca.uhn.fhir.model.dstu2.resource.Bundle returnBundleDstu2 = new ca.uhn.fhir.model.dstu2.resource.Bundle();
 		Bundle returnBundleStu3 = new Bundle();
@@ -117,6 +126,45 @@ public class PatientEverythingController {
 					Bundle newEntries = getEverythingDstu3(endpoint,id);
 					for(BundleEntryComponent newEntry : newEntries.getEntry()) {
 						returnBundleStu3.addEntry(newEntry);
+					}
+				}
+			}
+		}
+		Bundle convertedBundle = convertDstu2BundleToStu3Bundle(returnBundleDstu2);
+		for(BundleEntryComponent newEntry : convertedBundle.getEntry()) {
+			returnBundleStu3.addEntry(newEntry);
+		}
+		return new ResponseEntity<String>(jsonParser3.encodeResourceToString(returnBundleStu3), HttpStatus.OK);
+	}
+	
+	@RequestMapping(value = "/Patient/{id}/$everything", method = RequestMethod.GET, produces = "application/json")
+	public ResponseEntity<String> getPatientEverythingIdServiceEnabled(@PathVariable String id) throws JsonProcessingException{
+		ca.uhn.fhir.model.dstu2.resource.Bundle returnBundleDstu2 = new ca.uhn.fhir.model.dstu2.resource.Bundle();
+		Bundle returnBundleStu3 = new Bundle();
+		IDEntry idEntry = idService.getIDEntry(Integer.valueOf(id));
+		for(IGenericClient endpoint: fhirServers) {
+			FHIRSource fhirSource = idEntry.getFhirSource(endpoint.getServerBase());
+			if(fhirSource != null) {
+				String endpointId = fhirSource.getFhirPatiendId();
+				IFhirVersion version = endpoint.getFhirContext().getVersion();
+				if(version instanceof FhirDstu2) {
+					ca.uhn.fhir.model.dstu2.resource.Bundle newEntries = new ca.uhn.fhir.model.dstu2.resource.Bundle(); 
+					if(serverSupportsOperationDstu2(endpoint,"everything")) {
+						newEntries = getEverythingDstu2(endpoint,endpointId);
+					}
+					else {
+						newEntries = manuallyGetEverythingDstu2(endpoint,endpointId);
+					}
+					for(Entry newEntry : newEntries.getEntry()) {
+						returnBundleDstu2.addEntry(newEntry);
+					}
+				}
+				else if(version instanceof FhirDstu3) {
+					if(serverSupportsOperationDstu3(endpoint,"everything")) {
+						Bundle newEntries = getEverythingDstu3(endpoint,endpointId);
+						for(BundleEntryComponent newEntry : newEntries.getEntry()) {
+							returnBundleStu3.addEntry(newEntry);
+						}
 					}
 				}
 			}
