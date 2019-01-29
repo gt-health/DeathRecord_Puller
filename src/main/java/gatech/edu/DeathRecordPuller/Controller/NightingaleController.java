@@ -1,5 +1,8 @@
 package gatech.edu.DeathRecordPuller.Controller;
 
+import java.util.ArrayList;
+import java.util.Map;
+
 import org.hl7.fhir.dstu3.model.Address.AddressType;
 import org.hl7.fhir.dstu3.model.BooleanType;
 import org.hl7.fhir.dstu3.model.Bundle;
@@ -8,7 +11,10 @@ import org.hl7.fhir.dstu3.model.Bundle.BundleType;
 import org.hl7.fhir.dstu3.model.CodeType;
 import org.hl7.fhir.dstu3.model.CodeableConcept;
 import org.hl7.fhir.dstu3.model.Coding;
+import org.hl7.fhir.dstu3.model.ContactPoint;
+import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointUse;
 import org.hl7.fhir.dstu3.model.Contract;
+import org.hl7.fhir.dstu3.model.HumanName;
 import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Patient.ContactComponent;
 import org.hl7.fhir.dstu3.model.StringType;
@@ -31,12 +37,14 @@ import ca.uhn.fhir.model.primitive.StringDt;
 import ca.uhn.fhir.model.primitive.UnsignedIntDt;
 import ca.uhn.fhir.parser.IParser;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestAddress;
+import gatech.edu.DeathRecordPuller.EDRS.model.IngestCertifier;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestDeathRecord;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestDecedent;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestDecedent.MaritalStatusAtDeathEnum;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestRelatedPerson;
 import gatech.edu.DeathRecordPuller.EDRS.model.IngestRelatedPerson.TypeEnum;
 import gatech.edu.DeathRecordPuller.nightingale.service.NightingaleService;
+import gatech.edu.nightingale.model.Certifier;
 import gatech.edu.nightingale.model.Decedent;
 import gatech.edu.nightingale.model.Disposition;
 import gatech.edu.nightingale.model.Facility;
@@ -59,7 +67,7 @@ public class NightingaleController {
 	
 	protected NightingaleService nightingaleService;
 	
-	protected CertifierTypeValueSet certificerTypeValueSet;
+	protected CertifierTypeValueSet certifierTypeValueSet;
 	protected ContributoryTobaccoUseValueSet contributoryTobaccoUseValueSet;
 	protected DispositionValueSet dispositionValueSet;
 	protected EducationValueSet educationValueSet;
@@ -73,8 +81,8 @@ public class NightingaleController {
 	@Autowired()
 	public NightingaleController(NightingaleService nightingaleService) {
 		this.nightingaleService = nightingaleService;
-		certificerTypeValueSet = new CertifierTypeValueSet();
-		certificerTypeValueSet.init();
+		certifierTypeValueSet = new CertifierTypeValueSet();
+		certifierTypeValueSet.init();
 		contributoryTobaccoUseValueSet = new ContributoryTobaccoUseValueSet();
 		contributoryTobaccoUseValueSet.init();
 		dispositionValueSet = new DispositionValueSet();
@@ -119,11 +127,14 @@ public class NightingaleController {
 	
 	public Decedent convertIngestDecedentRecordToNightingale(IngestDecedent inputDecedent) {
 		Decedent output = new Decedent();
+		output.setDeceased(new BooleanType(true));
+		Map<String,CodeableConcept> idMap = iDTypeValueSet.map;
 		Identifier identifier = output.addIdentifier();
 		identifier.setValue(inputDecedent.getId());
 		identifier.setType(iDTypeValueSet.get(inputDecedent.getIdtype().getValue()));
 		PostalAddress decedentAddress = convertIngestAddressToNightingale(inputDecedent.getAddress());
 		output.getAddress().add(decedentAddress);
+		
 		for(IngestRelatedPerson relationship:inputDecedent.getRelations()) {
 			ContactComponent contact = new ContactComponent();
 			String relationshipValue = "N";
@@ -131,8 +142,23 @@ public class NightingaleController {
 				relationshipValue = "CP";
 			}
 			contact.addRelationship().addCoding(new Coding(relationshipValue,"http://hl7.org/fhir/v2/0131",""));
+			//TODO: Add Contact information
+			HumanName name = new HumanName();
+			name.setText(relationship.getName());
+			if(relationship.getName().indexOf(" ") != -1) {
+				ArrayList<StringType> givens = new ArrayList<StringType>();
+				givens.add(new StringType(relationship.getName().substring(0,relationship.getName().indexOf(' ')-1)));
+				name.setGiven(givens);
+				name.setFamily(relationship.getName().substring(relationship.getName().indexOf(' ')));
+			}
+			contact.setName(name);
+			ContactPoint telecomPoint = new ContactPoint();
+			telecomPoint.setValue(relationship.getTelecom());
+			contact.addTelecom(telecomPoint);
+			contact.setAddress(convertIngestAddressToNightingale(relationship.getAddress()));
 			output.addContact(contact);
 		}
+		
 		output.setBirthSex(new CodeType(inputDecedent.getBirthsex().getValue()));
 		//output.setEthnicity(input.getEthnicity()); TODO: Handle Ethnicity us-core correctly
 		//output.setRace(input.getRace()); TODO: Handle Race us-core correctly
@@ -166,6 +192,10 @@ public class NightingaleController {
 		//TODO: Add Occupation information to model
 		//output.occ
 		return output;
+	}
+	
+	public void convertIngestCertifierToNightingale(IngestCertifier inputCertifier) {
+		Certifier output = new Certifier();
 	}
 	
 	public PostalAddress convertIngestAddressToNightingale(IngestAddress inputAddress) {
