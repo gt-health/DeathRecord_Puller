@@ -4,6 +4,8 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Date;
 
+import org.hl7.fhir.dstu3.model.DateTimeType;
+
 import ca.uhn.fhir.model.api.IDatatype;
 import ca.uhn.fhir.model.dstu2.composite.AddressDt;
 import ca.uhn.fhir.model.dstu2.composite.AgeDt;
@@ -13,6 +15,7 @@ import ca.uhn.fhir.model.primitive.DateTimeDt;
 import ca.uhn.fhir.model.primitive.StringDt;
 
 public class HAPIFHIRUtil {
+	//DSTU2
 	public static Date getDate(IDatatype data) {
 		if(data instanceof DateTimeDt) {
 			return getDate((DateTimeDt)data);
@@ -50,6 +53,12 @@ public class HAPIFHIRUtil {
 		} catch (ParseException e) {
 			return null;
 		}
+	}
+	
+	//STU3
+	
+	public static Date getDate(DateTimeType dateTimeType) {
+		return new Date(dateTimeType.getValue().getTime());
 	}
 	
 	public static String addressToString(AddressDt address) {
