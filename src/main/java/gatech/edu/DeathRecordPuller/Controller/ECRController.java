@@ -1,5 +1,8 @@
 package gatech.edu.DeathRecordPuller.Controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.hl7.fhir.dstu3.model.Bundle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,13 +37,15 @@ public class ECRController {
 	}
 	
 	@RequestMapping(value = "/ECR", method = RequestMethod.GET, produces = "application/json")
-	public ResponseEntity<ECR> getECRUsingIDService(@RequestParam() String id, @RequestParam(required = false) String lastName,
+	public ResponseEntity<List<ECR> > getECRUsingIDService(@RequestParam() String id, @RequestParam(required = false) String lastName,
 			@RequestParam(required = false) String firstName,@RequestParam(required = false) String zipCode,
 			@RequestParam(required = false) String diagnosisCode, @RequestParam(required = false) Integer page) throws JsonProcessingException{
 		String jsonResults = patientEverythingController.getPatientEverythingIdServiceEnabled(id, "Jefferson County Coroner/Medical Examiner Office", "", lastName, firstName).getBody();
 		Bundle fhirRecords = (Bundle)jsonParser3.parseResource(jsonResults);
 		ECR ecr = ecrService.ecrFromFHIRRecords(fhirRecords);
-		return new ResponseEntity<ECR>(ecr,HttpStatus.OK);
+		List<ECR> returnList = new ArrayList<ECR>();
+		returnList.add(ecr);
+		return new ResponseEntity<List<ECR> >(returnList,HttpStatus.OK);
 	}
 	
 }
