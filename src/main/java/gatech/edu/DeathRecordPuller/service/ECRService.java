@@ -612,9 +612,12 @@ public class ECRService {
 			labOrder.setdisplay(coding.getDisplay());
 			labOrder.setsystem(coding.getSystem());
 			LabResult labResult = new LabResult();
+			labResult.setsystem("n/a");
 			Type untypedValue = observation.getValue();
 			if (untypedValue instanceof Quantity) {
-				labResult.setValue(((Quantity) untypedValue).getValue().toString());
+				Quantity quantity = (Quantity) untypedValue;
+				labResult.setValue(quantity.getValue().toString());
+				labResult.setUnit(new gatech.edu.STIECR.JSON.CodeableConcept(quantity.getSystem(),quantity.getUnit(),quantity.getCode()));
 			} else
 			if (untypedValue instanceof CodeableConcept) {
 				Coding valueCoding = ((CodeableConcept) untypedValue).getCodingFirstRep();
