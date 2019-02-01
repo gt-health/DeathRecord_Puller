@@ -651,6 +651,7 @@ public class ECRService {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			labResult.setsystem(coding.getSystem());
 			labOrder.getLaboratory_Results().add(labResult);
 			ecr.getPatient().getlabOrderCode().add(labOrder);
 		}
