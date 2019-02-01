@@ -43,6 +43,7 @@ public class ECRController {
 		String jsonResults = patientEverythingController.getPatientEverythingIdServiceEnabled(id, "Jefferson County Coroner/Medical Examiner Office", "", lastName, firstName).getBody();
 		Bundle fhirRecords = (Bundle)jsonParser3.parseResource(jsonResults);
 		ECR ecr = ecrService.ecrFromFHIRRecords(fhirRecords);
+		ecr.setECRId(id);
 		List<ECR> returnList = new ArrayList<ECR>();
 		returnList.add(ecr);
 		return new ResponseEntity<List<ECR> >(returnList,HttpStatus.OK);

@@ -143,7 +143,7 @@ public class ECRService {
 		ecr.getPatient().setbirthDate(patient.getBirthDate().toString());
 		TypeableID id = new TypeableID();
 		id.settype(patient.getIdentifierFirstRep().getSystem());
-		id.setvalue(patient.getIdentifierFirstRep().getId());
+		id.setvalue(patient.getIdentifierFirstRep().getValue());
 		ecr.getPatient().getid().add(id);
 		Name name = new Name();
 		name.setfamily(patient.getNameFirstRep().getFamily());
