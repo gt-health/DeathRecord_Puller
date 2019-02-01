@@ -621,12 +621,6 @@ public class ECRService {
 				labResult.setValue(valueCoding.getDisplay());
 				labResult.setcode(valueCoding.getCode());
 				labResult.setdisplay(valueCoding.getDisplay());
-				try {
-					labResult.setDate(HAPIFHIRUtil.getDate(observation.getEffectiveDateTimeType()).toString());
-				} catch (FHIRException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 			} else
 			if (untypedValue instanceof StringType) {
 				labResult.setValue(untypedValue.toString());
@@ -650,6 +644,12 @@ public class ECRService {
 				Period period = (Period) untypedValue;
 				labResult.setValue(
 						"Start:" + period.getStart().toString() + ";End" + period.getEnd().toString());
+			}
+			try {
+				labResult.setDate(HAPIFHIRUtil.getDate(observation.getEffectiveDateTimeType()).toString());
+			} catch (FHIRException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 			labOrder.getLaboratory_Results().add(labResult);
 			ecr.getPatient().getlabOrderCode().add(labOrder);
