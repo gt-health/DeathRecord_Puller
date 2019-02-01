@@ -617,7 +617,16 @@ public class ECRService {
 				labResult.setValue(((Quantity) untypedValue).getValue().toString());
 			} else
 			if (untypedValue instanceof CodeableConcept) {
-				labResult.setValue(((CodeableConcept) untypedValue).getCodingFirstRep().getDisplay());
+				Coding valueCoding = ((CodeableConcept) untypedValue).getCodingFirstRep();
+				labResult.setValue(valueCoding.getDisplay());
+				labResult.setcode(valueCoding.getCode());
+				labResult.setdisplay(valueCoding.getDisplay());
+				try {
+					labResult.setDate(HAPIFHIRUtil.getDate(observation.getEffectiveDateTimeType()).toString());
+				} catch (FHIRException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			} else
 			if (untypedValue instanceof StringType) {
 				labResult.setValue(untypedValue.toString());
