@@ -643,6 +643,7 @@ public class ECRService {
 						"Start:" + period.getStart().toString() + ";End" + period.getEnd().toString());
 			}
 			labOrder.getLaboratory_Results().add(labResult);
+			ecr.getPatient().getlabOrderCode().add(labOrder);
 		}
 	}
 
