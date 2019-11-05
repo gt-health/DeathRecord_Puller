@@ -49,7 +49,7 @@ scheduler.scriptFolder = ~/crontab-utilities
 scheduler.scriptUser = root
 
 #WebURL context patch such as www.myserver.com/FHIRController
-server.contextPath = /FHIRController
+server.contextPath = /DeathRecordController
 
 # For single endpoint connections
 FHIR.client.serverBaseUrl = http://smart-wip.hdap.gatech.edu:8080/gt-fhir-webapp/base
