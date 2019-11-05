@@ -1,6 +1,6 @@
-# FHIR Controller
+# DeathRecord_Puller/Controller
 
-This project is a prototype FHIR_Controller for the CDC-STI project. It uses the domain services to pull a list of FHIR endpoints, and searches for relvant patient information for each of them. the FHIR_Controller also has scheduling capabilities in order to repeatable check the endpoints for any new information
+This project is a prototype DeathRecord_Ingestion tool for the MRP project. It uses the domain services to pull a list of FHIR endpoints, and searches for relvant patient information for each of them. the FHIR_Controller also has scheduling capabilities in order to repeatable check the endpoints for any new information
 
 ## Requirements
 
@@ -70,10 +70,10 @@ logging.level.gatech.edu.common=DEBUG
 
 In order to manually request a FHIR collection, you may run
 ```
-GET http://www.fhircontroller.com/FHIRGET?id=1
+GET http://${DeathRecord_Puller_hostname}/FHIRGET?id=1
 ```
 
 In order to schedule a new job, simply POST to the same endpoint with a cronstring (https://crontab.guru/)
 ```
-POST http://www.fhircontroller.com/FHIRGET?id=1&cron="0 0 * * *"
+POST http://${DeathRecord_Puller_hostname}/FHIRGET?id=1&cron="0 0 * * *"
 ```
